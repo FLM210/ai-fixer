@@ -1,0 +1,23 @@
+theme: jekyll-theme-minimal
+title: ai-fixer
+description: 智能运维修复 Agent
+baseurl: /ai-fixer
+url: https://your-org.github.io
+
+nav:
+  - title: 首页
+    url: /
+  - title: 快速开始
+    url: /getting-started
+  - title: 配置指南
+    url: /configuration
+  - title: 插件系统
+    url: /plugins
+  - title: 前端管理
+    url: /frontend
+  - title: API 参考
+    url: /api
+  - title: 架构设计
+    url: /architecture
+  - title: 部署指南
+    url: /deployment
