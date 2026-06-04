@@ -1,0 +1,6 @@
+apiVersion: v2
+name: k8s-fixer
+description: Kubernetes 故障自动诊断与修复机器人
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

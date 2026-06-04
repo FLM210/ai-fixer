@@ -1,0 +1,50 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/flm210/k8s-fixer
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+config:
+  log_level: INFO
+  llm_provider: anthropic
+  llm_model: claude-sonnet-4-20250514
+  llm_max_turns: 8
+  llm_timeout_seconds: 60
+  redis_url: redis://localhost:6379/0
+
+secrets:
+  database_url: ""
+  redis_url: ""
+  lark_app_id: ""
+  lark_app_secret: ""
+  anthropic_api_key: ""
+  openai_api_key: ""
+  card_signing_key: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+serviceAccount:
+  create: true
+  name: fixer-sa
+
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+
+cleanup:
+  enabled: true
+  schedule: "0 3 * * *"
+  retentionDays: 180

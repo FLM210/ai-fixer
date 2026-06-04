@@ -1,0 +1,10 @@
+k8s-fixer 已部署!
+
+获取应用 URL:
+  kubectl port-forward svc/{{ include "k8s-fixer.fullname" . }} 8080:{{ .Values.service.port }}
+
+健康检查:
+  curl http://localhost:8080/healthz
+
+指标:
+  curl http://localhost:8080/metrics

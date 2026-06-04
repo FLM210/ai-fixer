@@ -1,0 +1,54 @@
+{{- if .Values.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.serviceAccount.name }}
+  labels:
+    {{- include "k8s-fixer.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "k8s-fixer.fullname" . }}-operator
+  labels:
+    {{- include "k8s-fixer.labels" . | nindent 4 }}
+rules:
+  # 诊断(只读)
+  - apiGroups: [""]
+    resources: [pods, nodes, services, events, configmaps]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [pods/log]
+    verbs: [get]
+  - apiGroups: ["apps"]
+    resources: [deployments, replicasets, statefulsets]
+    verbs: [get, list, watch]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: [pods, nodes]
+    verbs: [get, list]
+  # 修复(写)
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [delete]
+  - apiGroups: ["apps"]
+    resources: [deployments/scale]
+    verbs: [update, patch]
+  - apiGroups: [""]
+    resources: [nodes]
+    verbs: [patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "k8s-fixer.fullname" . }}-operator
+  labels:
+    {{- include "k8s-fixer.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "k8s-fixer.fullname" . }}-operator
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.serviceAccount.name }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

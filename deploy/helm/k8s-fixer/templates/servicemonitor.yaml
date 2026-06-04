@@ -1,0 +1,16 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "k8s-fixer.fullname" . }}
+  labels:
+    {{- include "k8s-fixer.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "k8s-fixer.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      interval: {{ .Values.monitoring.serviceMonitor.interval }}
+      path: /metrics
+{{- end }}

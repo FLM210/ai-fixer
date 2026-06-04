@@ -1,0 +1,49 @@
+{{- if .Values.cleanup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "k8s-fixer.fullname" . }}-cleanup
+  labels:
+    {{- include "k8s-fixer.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cleanup.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: cleanup
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              command:
+                - python
+                - -c
+                - |
+                  import asyncio
+                  from app.db import session_scope
+                  from sqlalchemy import text
+
+                  async def cleanup():
+                      retention_days = {{ .Values.cleanup.retentionDays }}
+                      async with session_scope() as session:
+                          await session.execute(text(
+                              "DELETE FROM fixer.incident_events WHERE incident_id IN "
+                              "(SELECT id FROM fixer.incidents WHERE status IN ('resolved','ignored') "
+                              "AND created_at < NOW() - make_interval(days => :days))"
+                          ), {"days": retention_days})
+                          await session.execute(text(
+                              "DELETE FROM fixer.incidents WHERE status IN ('resolved','ignored') "
+                              "AND created_at < NOW() - make_interval(days => :days)"
+                          ), {"days": retention_days})
+                          await session.execute(text(
+                              "DELETE FROM fixer.lark_card_bindings WHERE expires_at < NOW()"
+                          ))
+                          print(f"Cleanup completed: retention={retention_days}d")
+
+                  asyncio.run(cleanup())
+              envFrom:
+                - configMapRef:
+                    name: {{ include "k8s-fixer.fullname" . }}-config
+                - secretRef:
+                    name: {{ include "k8s-fixer.fullname" . }}-secrets
+{{- end }}

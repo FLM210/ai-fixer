@@ -1,0 +1,57 @@
+# Production docker-compose - 部署到服务器时使用
+# 用法: docker compose -f deploy/docker-compose.prod.yml --env-file .env up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fixer
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fixer}
+      POSTGRES_DB: fixer
+    volumes:
+      - fixer_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fixer"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://fixer:${POSTGRES_PASSWORD:-fixer}@postgres:5432/fixer
+      REDIS_URL: redis://redis:6379/0
+      LLM_PROVIDER: ${LLM_PROVIDER}
+      LLM_BASE_URL: ${LLM_BASE_URL}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MODEL: ${LLM_MODEL}
+      LARK_APP_ID: ${LARK_APP_ID}
+      LARK_APP_SECRET: ${LARK_APP_SECRET}
+      ALERT_BOT_IDS: ${ALERT_BOT_IDS:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${PORT:-8080}:8080"
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8080"
+
+volumes:
+  fixer_pg:

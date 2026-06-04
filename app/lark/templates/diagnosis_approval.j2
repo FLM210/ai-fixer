@@ -1,0 +1,14 @@
+{
+  "type": "template",
+  "data": {
+    "template_id": "diagnosis_approval",
+    "template_variable": {
+      "incident_id": "{{ incident_id }}",
+      "severity": "{{ severity }}",
+      "service": "{{ service }}",
+      "diagnosis_summary": "{{ diagnosis_summary }}",
+      "confidence": {{ confidence }},
+      "proposals": {{ proposals | tojson }}
+    }
+  }
+}
