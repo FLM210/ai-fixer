@@ -8,7 +8,7 @@ Create Date: 2026-06-03 00:00:00.000000
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+# PostgreSQL imports removed for compatibility
 
 from alembic import op
 

@@ -1,33 +1,120 @@
-"""飞书 HTTP Webhook 事件接收端点。"""
+"""飞书 HTTP Webhook 事件接收端点。
+
+支持两种模式：
+1. WebSocket（默认）：机器人主动连接飞书
+2. HTTP 回调：飞书推送事件到此端点
+"""
 
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# 事件处理器引用（由 main.py 注入）
+_event_handler = None
+_card_handler = None
+
+
+def set_event_handler(handler: Any) -> None:
+    """设置事件处理器。"""
+    global _event_handler
+    _event_handler = handler
+
+
+def set_card_handler(handler: Any) -> None:
+    """设置卡片回调处理器。"""
+    global _card_handler
+    _card_handler = handler
+
+
+def _verify_signature(token: str, timestamp: str, nonce: str, signature: str, body: str) -> bool:
+    """验证飞书事件签名。"""
+    if not token:
+        return True  # 未配置 token 则跳过验证
+
+    import hashlib
+    content = timestamp + nonce + token + body
+    computed = hashlib.sha256(content.encode()).hexdigest()
+    return computed == signature
+
 
 @router.post("/lark/event")
 async def lark_event(request: Request) -> dict:
-    body = await request.json()
+    """接收飞书事件回调。
 
-    # URL 验证
+    飞书会先发送 URL 验证请求，验证通过后才会推送事件。
+    """
+    body_bytes = await request.body()
+    body_str = body_bytes.decode("utf-8")
+
+    try:
+        body = json.loads(body_str)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    # URL 验证（飞书配置回调时的握手）
     if body.get("type") == "url_verification":
         logger.info("飞书 URL 验证请求")
         return {"challenge": body.get("challenge", "")}
 
+    # 事件签名验证
     header = body.get("header", {})
-    event_type = header.get("event_type", "")
+    token = header.get("token", "")
+    timestamp = header.get("create_time", "")
+    nonce = header.get("nonce", "")
+    signature = request.headers.get("X-Lark-Signature", "")
 
+    if signature and not _verify_signature(token, timestamp, nonce, signature, body_str):
+        logger.warning("飞书事件签名验证失败")
+        raise HTTPException(status_code=403, detail="Signature verification failed")
+
+    event_type = header.get("event_type", "")
+    logger.info("收到飞书事件: type=%s", event_type)
+
+    # 处理消息事件
     if event_type == "im.message.receive_v1":
-        await _handle_message_event(body.get("event", {}))
+        event_data = body.get("event", {})
+        if _event_handler:
+            # 使用注册的事件处理器（HTTP 回调模式）
+            try:
+                # 构建 P2ImMessageReceiveV1 对象
+                from lark_oapi.api.im.v1 import P2ImMessageReceiveV1
+                import lark_oapi as lark
+
+                # 创建事件对象
+                event_obj = P2ImMessageReceiveV1.builder().build()
+                # 手动设置事件数据
+                if hasattr(event_obj, 'event'):
+                    event_obj.event = type('Event', (), {
+                        'message': type('Message', (), {
+                            'chat_id': event_data.get('message', {}).get('chat_id', ''),
+                            'msg_type': event_data.get('message', {}).get('message_type', ''),
+                            'content': event_data.get('message', {}).get('content', ''),
+                            'message_id': event_data.get('message', {}).get('message_id', ''),
+                        })(),
+                        'sender': type('Sender', (), {
+                            'sender_id': type('SenderId', (), {
+                                'open_id': event_data.get('sender', {}).get('sender_id', {}).get('open_id', ''),
+                                'user_id': event_data.get('sender', {}).get('sender_id', {}).get('user_id', ''),
+                            })(),
+                        })(),
+                    })()
+
+                _event_handler(event_obj)
+            except Exception:
+                logger.exception("处理飞书消息事件异常")
+        else:
+            # 兼容旧模式：直接调用处理函数
+            await _handle_message_event(event_data)
 
     return {"code": 0}
 
@@ -36,6 +123,19 @@ async def lark_event(request: Request) -> dict:
 async def lark_card_action(request: Request) -> dict:
     """处理卡片按钮点击回调。"""
     body = await request.json()
+
+    # 签名验证
+    timestamp = request.headers.get("X-Lark-Request-Timestamp", "")
+    nonce = request.headers.get("X-Lark-Request-Nonce", "")
+    signature = request.headers.get("X-Lark-Signature", "")
+
+    if signature:
+        body_str = json.dumps(body, ensure_ascii=False)
+        from app.config import get_settings
+        settings = get_settings()
+        if not _verify_signature(settings.card_signing_key, timestamp, nonce, signature, body_str):
+            logger.warning("卡片回调签名验证失败")
+            raise HTTPException(status_code=403, detail="Signature verification failed")
 
     # 提取 action 信息
     action = body.get("action", {})

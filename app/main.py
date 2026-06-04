@@ -56,21 +56,37 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("startup", plugins=[s.name for s in global_registry.list_specs(include_disabled=True)],
                 disabled=disabled_plugins)
 
-    # 启动飞书 WebSocket 连接
+    # 启动飞书连接
     lark_client = None
     if settings.lark_app_id and settings.lark_app_secret:
-        from app.lark.client import LarkClient
-        from app.lark.detector import AlertDetector
-        from app.lark.handler import create_event_handler
+        # 获取连接模式：websocket（默认）或 callback
+        lark_mode = dynamic_cfg.get("lark_mode", "websocket") if dynamic_cfg else "websocket"
 
-        import asyncio
-        detector = AlertDetector(alert_bot_ids=settings.alert_bot_ids)
-        handler = create_event_handler(detector, main_loop=asyncio.get_running_loop())
-        lark_client = LarkClient(settings.lark_app_id, settings.lark_app_secret)
-        await lark_client.start(handler)
-        logger.info("lark_ws_started", app_id=settings.lark_app_id)
+        if lark_mode == "websocket":
+            # WebSocket 模式：机器人主动连接飞书
+            from app.lark.client import LarkClient
+            from app.lark.detector import AlertDetector
+            from app.lark.handler import create_event_handler
+
+            import asyncio
+            detector = AlertDetector(alert_bot_ids=settings.alert_bot_ids)
+            handler = create_event_handler(detector, main_loop=asyncio.get_running_loop())
+            lark_client = LarkClient(settings.lark_app_id, settings.lark_app_secret)
+            await lark_client.start(handler)
+            logger.info("lark_ws_started", app_id=settings.lark_app_id)
+        else:
+            # HTTP 回调模式：飞书推送事件到 /lark/event
+            from app.lark.handler import create_event_handler
+            from app.lark.detector import AlertDetector
+            from app.lark.webhook import set_event_handler
+
+            import asyncio
+            detector = AlertDetector(alert_bot_ids=settings.alert_bot_ids)
+            handler = create_event_handler(detector, main_loop=asyncio.get_running_loop())
+            set_event_handler(handler)
+            logger.info("lark_callback_mode", app_id=settings.lark_app_id)
     else:
-        logger.info("lark_ws_skipped", reason="lark_app_id or lark_app_secret not configured")
+        logger.info("lark_skipped", reason="lark_app_id or lark_app_secret not configured")
 
     try:
         yield

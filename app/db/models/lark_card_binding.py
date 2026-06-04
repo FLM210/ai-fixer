@@ -2,10 +2,10 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, ForeignKey, String, func
-from sqlalchemy.dialects.postgresql import UUID as PgUUID
+from app.db.compat import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base
+from app.db.base import Base, get_table_args
 
 
 class LarkCardBinding(Base):
@@ -25,4 +25,4 @@ class LarkCardBinding(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    __table_args__ = ({"schema": "fixer"},)
+    __table_args__ = get_table_args()

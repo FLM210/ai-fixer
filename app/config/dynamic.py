@@ -27,6 +27,7 @@ MANAGED_CONFIGS: dict[str, tuple[Any, str, str, bool]] = {
     "lark_app_secret": ("", "str", "飞书应用 App Secret", True),
     "alert_bot_ids": ("", "str", "告警机器人 Sender ID（逗号分隔）", False),
     "card_signing_key": ("", "str", "卡片按钮 HMAC 签名密钥", True),
+    "lark_mode": ("websocket", "str", "飞书连接模式（websocket / callback）", False),
 
     # --- Embedding ---
     "embedding_base_url": ("", "str", "Embedding API 地址（为空则复用 LLM）", False),

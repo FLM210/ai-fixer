@@ -10,12 +10,27 @@ ai-fixer 采用两层配置架构：
 仅需配置基础设施连接：
 
 ```env
-# 必填：PostgreSQL 连接串
+# 必填：数据库连接串
+# PostgreSQL:
 DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/dbname
+# MySQL:
+DATABASE_URL=mysql+aiomysql://user:password@localhost:3306/dbname
 
 # 必填：Redis 连接
 REDIS_URL=redis://localhost:6379/0
 ```
+
+### 数据库支持
+
+| 数据库 | 连接串格式 | 驱动 |
+|--------|-----------|------|
+| PostgreSQL | `postgresql+asyncpg://...` | asyncpg |
+| MySQL | `mysql+aiomysql://...` | aiomysql |
+
+**注意**：
+- PostgreSQL 使用 `fixer` schema 隔离表
+- MySQL 直接在指定数据库中创建表
+- 两种数据库都支持 JSON 字段（PostgreSQL 用 JSONB，MySQL 用 JSON）
 
 ## 运行时配置（前端管理）
 

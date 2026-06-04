@@ -2,11 +2,11 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, Index, Integer, String, func
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.dialects.postgresql import UUID as PgUUID
+from app.db.compat import JSONCompat as JSONB
+from app.db.compat import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base
+from app.db.base import Base, get_schema_name, get_table_args
 from app.db.models._enums import IncidentStatus, ResolutionType
 
 
@@ -38,5 +38,5 @@ class Incident(Base):
     __table_args__ = (
         Index("ix_incidents_fingerprint_created", "fingerprint", "created_at"),
         Index("ix_incidents_status", "status"),
-        {"schema": "fixer"},
+        *([{"schema": "fixer"}] if get_schema_name() else []),
     )

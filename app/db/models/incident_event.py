@@ -2,11 +2,11 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.dialects.postgresql import UUID as PgUUID
+from app.db.compat import JSONCompat as JSONB
+from app.db.compat import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base
+from app.db.base import Base, get_table_args
 
 
 class IncidentEvent(Base):
@@ -28,4 +28,4 @@ class IncidentEvent(Base):
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    __table_args__ = ({"schema": "fixer"},)
+    __table_args__ = get_table_args()

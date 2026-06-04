@@ -8,6 +8,7 @@ from sqlalchemy import pool, text
 
 from app.config import get_settings
 from app.db.base import Base
+from app.db.compat import get_database_type
 
 # import all models so metadata is populated
 import app.db.models  # noqa: F401
@@ -21,24 +22,29 @@ config.set_main_option("sqlalchemy.url", settings.database_url)
 
 target_metadata = Base.metadata
 
+db_type = get_database_type(settings.database_url)
+
 
 def include_object(obj: object, name: str | None, type_: str, reflected: bool, compare_to: object) -> bool:
-    # 只管理 fixer schema 下的对象
-    if type_ == "table":
-        return getattr(obj, "schema", None) == "fixer"
+    if db_type == "postgresql":
+        # PostgreSQL: 只管理 fixer schema 下的对象
+        if type_ == "table":
+            return getattr(obj, "schema", None) == "fixer"
     return True
 
 
 def do_run_migrations(connection: Connection) -> None:
-    connection.execute(text("CREATE SCHEMA IF NOT EXISTS fixer"))
-    connection.execute(text("SET search_path TO fixer, public"))
-    connection.commit()
+    if db_type == "postgresql":
+        connection.execute(text("CREATE SCHEMA IF NOT EXISTS fixer"))
+        connection.execute(text("SET search_path TO fixer, public"))
+        connection.commit()
+
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
         version_table="alembic_version",
-        version_table_schema="fixer",
-        include_schemas=True,
+        version_table_schema="fixer" if db_type == "postgresql" else None,
+        include_schemas=db_type == "postgresql",
         include_object=include_object,
         compare_type=True,
         transaction_per_migration=True,

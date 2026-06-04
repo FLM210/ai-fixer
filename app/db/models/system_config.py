@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base
+from app.db.base import Base, get_table_args
 
 
 class SystemConfig(Base):
@@ -22,4 +22,4 @@ class SystemConfig(Base):
     )
     updated_by: Mapped[str | None] = mapped_column(String(128))
 
-    __table_args__ = ({"schema": "fixer"},)
+    __table_args__ = get_table_args()

@@ -63,6 +63,7 @@ _GROUPS = [
             "lark_app_secret",
             "alert_bot_ids",
             "card_signing_key",
+            "lark_mode",
         ],
     },
     {

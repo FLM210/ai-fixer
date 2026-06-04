@@ -8,7 +8,7 @@ Create Date: 2026-05-26 00:00:00.000000
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+# PostgreSQL imports removed for compatibility
 
 from alembic import op
 
@@ -39,13 +39,13 @@ def upgrade() -> None:
     # RepairOutcome 表
     op.create_table(
         'repair_outcomes',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column('incident_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('fixer.incidents.id', ondelete='CASCADE'), nullable=False, index=True),
-        sa.Column('execution_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('fixer.fix_executions.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('id', sa.String(36), primary_key=True),
+        sa.Column('incident_id', sa.String(36), sa.ForeignKey('fixer.incidents.id', ondelete='CASCADE'), nullable=False, index=True),
+        sa.Column('execution_id', sa.String(36), sa.ForeignKey('fixer.fix_executions.id', ondelete='CASCADE'), nullable=False),
         sa.Column('plugin_name', sa.String(128), nullable=False),
         sa.Column('success', sa.Boolean(), nullable=False),
-        sa.Column('metrics_before', postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")),
-        sa.Column('metrics_after', postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column('metrics_before', sa.JSON(), nullable=False, server_default=sa.text("'{}'")),
+        sa.Column('metrics_after', sa.JSON(), nullable=False, server_default=sa.text("'{}'")),
         sa.Column('verified', sa.Boolean(), server_default=sa.text('false')),
         sa.Column('duration_seconds', sa.Integer(), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
@@ -55,11 +55,11 @@ def upgrade() -> None:
     # DiagnosticPath 表
     op.create_table(
         'diagnostic_paths',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column('incident_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('fixer.incidents.id', ondelete='CASCADE'), nullable=False, index=True),
+        sa.Column('id', sa.String(36), primary_key=True),
+        sa.Column('incident_id', sa.String(36), sa.ForeignKey('fixer.incidents.id', ondelete='CASCADE'), nullable=False, index=True),
         sa.Column('turn_index', sa.Integer(), nullable=False),
         sa.Column('plugin_name', sa.String(128), nullable=False),
-        sa.Column('args', postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column('args', sa.JSON(), nullable=False, server_default=sa.text("'{}'")),
         sa.Column('output_summary', sa.String(2048), nullable=True),
         sa.Column('evidence_produced', sa.Boolean(), server_default=sa.text('false')),
         sa.Column('duration_ms', sa.Integer(), nullable=True),
