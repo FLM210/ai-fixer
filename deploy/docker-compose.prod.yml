@@ -47,6 +47,7 @@ services:
       LARK_APP_SECRET: ${LARK_APP_SECRET}
       ALERT_BOT_IDS: ${ALERT_BOT_IDS:-}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SERVE_STATIC: ${SERVE_STATIC:-1}
     ports:
       - "${PORT:-8080}:8080"
     command: >
