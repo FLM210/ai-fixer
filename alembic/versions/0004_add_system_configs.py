@@ -25,7 +25,7 @@ def upgrade() -> None:
         sa.Column('value', sa.Text(), nullable=False),
         sa.Column('value_type', sa.String(16), nullable=False, server_default=sa.text("'str'")),
         sa.Column('description', sa.String(512), nullable=True),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         sa.Column('updated_by', sa.String(128), nullable=True),
         schema='fixer',
     )

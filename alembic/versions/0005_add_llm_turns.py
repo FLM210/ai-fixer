@@ -30,7 +30,7 @@ def upgrade() -> None:
         sa.Column('tool_name', sa.String(128), nullable=True),
         sa.Column('tool_input', sa.JSON(), nullable=True),
         sa.Column('tool_output', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         schema='fixer',
     )
 

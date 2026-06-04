@@ -40,6 +40,28 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     configure_logging(settings.log_level)
     setup_tracing(service_name='ai-fixer', endpoint=settings.otel_exporter_endpoint if hasattr(settings, 'otel_exporter_endpoint') else None)
 
+    # 检查数据库连接
+    logger.info("检查数据库连接...")
+    try:
+        async with session_scope() as session:
+            await session.execute(text("SELECT 1"))
+        logger.info("数据库连接成功")
+    except Exception as e:
+        logger.critical("数据库连接失败，无法启动", error=str(e))
+        raise SystemExit(f"数据库连接失败: {e}")
+
+    # 检查 Redis 连接
+    logger.info("检查 Redis 连接...")
+    try:
+        import redis.asyncio as aioredis
+        redis_client = aioredis.from_url(settings.redis_url)
+        await redis_client.ping()
+        await redis_client.close()
+        logger.info("Redis 连接成功")
+    except Exception as e:
+        logger.critical("Redis 连接失败，无法启动", error=str(e))
+        raise SystemExit(f"Redis 连接失败: {e}")
+
     # 从数据库加载动态配置
     try:
         dynamic_cfg = get_dynamic_config()

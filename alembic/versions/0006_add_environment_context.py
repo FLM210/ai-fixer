@@ -23,7 +23,7 @@ def upgrade() -> None:
         'environment_context',
         sa.Column('id', sa.Integer(), primary_key=True, default=1),
         sa.Column('content', sa.Text(), nullable=False, server_default=sa.text("''")),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         sa.Column('updated_by', sa.String(), nullable=True, server_default=sa.text("'user'")),
         schema='fixer',
     )

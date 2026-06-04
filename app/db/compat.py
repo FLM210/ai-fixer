@@ -115,3 +115,13 @@ def get_engine_kwargs(url: str) -> dict[str, Any]:
         })
 
     return kwargs
+
+
+def get_server_default(url: str) -> Any:
+    """返回数据库兼容的 server_default。"""
+    from sqlalchemy import text
+
+    db_type = get_database_type(url)
+    if db_type == "mysql":
+        return text("CURRENT_TIMESTAMP")
+    return text("now()")

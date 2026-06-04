@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Text, func
+from sqlalchemy import text,  DateTime, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, get_table_args
@@ -16,7 +16,7 @@ class EnvironmentContext(Base):
     id: Mapped[int] = mapped_column(primary_key=True, default=1)
     content: Mapped[str] = mapped_column(Text, nullable=False, default="")
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+        DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), onupdate=func.now(), nullable=False
     )
     updated_by: Mapped[str | None] = mapped_column(default="user")
 

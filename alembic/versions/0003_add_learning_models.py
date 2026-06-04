@@ -48,7 +48,7 @@ def upgrade() -> None:
         sa.Column('metrics_after', sa.JSON(), nullable=False, server_default=sa.text("'{}'")),
         sa.Column('verified', sa.Boolean(), server_default=sa.text('false')),
         sa.Column('duration_seconds', sa.Integer(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         schema='fixer',
     )
 
@@ -64,7 +64,7 @@ def upgrade() -> None:
         sa.Column('evidence_produced', sa.Boolean(), server_default=sa.text('false')),
         sa.Column('duration_ms', sa.Integer(), nullable=True),
         sa.Column('tokens_used', sa.Integer(), server_default=sa.text('0')),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=False),
         schema='fixer',
     )
 

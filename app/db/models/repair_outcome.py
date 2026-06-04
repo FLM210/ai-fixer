@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import text,  DateTime, ForeignKey, Integer, String, func
 from app.db.compat import JSONCompat as JSONB
 from app.db.compat import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -32,7 +32,7 @@ class RepairOutcome(Base):
     verified: Mapped[bool] = mapped_column(default=False)
     duration_seconds: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False
     )
 
     __table_args__ = get_table_args()
