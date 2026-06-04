@@ -202,13 +202,13 @@ export default function IncidentsPage() {
 
       {/* 详情弹窗 */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        <DialogContent className="w-[90vw] max-w-[90vw] max-h-[85vh] overflow-auto">
+        <DialogContent className="incident-detail-dialog w-[calc(100vw-2rem)] max-w-4xl">
           <DialogHeader>
             <DialogTitle>Incident 详情</DialogTitle>
           </DialogHeader>
           {selected && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="incident-detail-body space-y-4 pr-2">
+              <div className="grid min-w-0 grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                 <div><strong>ID:</strong> {selected.id.slice(0, 8)}...</div>
                 <div><strong>状态:</strong> {selected.status}</div>
                 <div><strong>分类:</strong> {selected.category ?? '-'}</div>
@@ -222,7 +222,7 @@ export default function IncidentsPage() {
               {selected.diagnosis && (
                 <div>
                   <h4 className="font-semibold mb-1">诊断</h4>
-                  <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
+                  <div className="incident-markdown text-sm prose prose-sm max-w-none dark:prose-invert">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{selected.diagnosis.root_cause ?? '无'}</ReactMarkdown>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -237,7 +237,7 @@ export default function IncidentsPage() {
                 <div>
                   <h4 className="font-semibold mb-1">修复提案</h4>
                   {selected.proposals.map((p) => (
-                    <div key={p.id} className="border rounded p-2 mb-2 text-sm">
+                    <div key={p.id} className="min-w-0 border rounded p-2 mb-2 text-sm">
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant="outline">{p.plugin_name}</Badge>
                         <Badge variant={p.risk_level === 'critical' ? 'destructive' : 'secondary'}>
@@ -254,7 +254,7 @@ export default function IncidentsPage() {
                 <div>
                   <h4 className="font-semibold mb-1">执行结果</h4>
                   {selected.executions.map((e) => (
-                    <div key={e.id} className="border rounded p-2 mb-2 text-sm">
+                    <div key={e.id} className="min-w-0 border rounded p-2 mb-2 text-sm">
                       <div className="flex items-center gap-2">
                         <Badge variant={e.status === 'success' ? 'default' : 'destructive'}>
                           {e.status}
@@ -277,7 +277,7 @@ export default function IncidentsPage() {
                         <h5 className="text-sm font-medium text-muted-foreground mb-2 uppercase">{phase}</h5>
                         <div className="space-y-2">
                           {phaseTurns.map((turn) => (
-                            <div key={turn.id} className="border rounded p-3 text-sm">
+                            <div key={turn.id} className="min-w-0 border rounded p-3 text-sm">
                               <div className="flex items-center gap-2 mb-2">
                                 <Badge variant={
                                   turn.role === 'user' ? 'default' :
@@ -295,7 +295,7 @@ export default function IncidentsPage() {
                                   #{turn.turn_index}
                                 </span>
                               </div>
-                              <div className="text-xs bg-muted p-2 rounded max-h-60 overflow-auto prose prose-xs max-w-none dark:prose-invert">
+                              <div className="incident-markdown text-xs bg-muted p-2 rounded max-h-60 overflow-y-auto overflow-x-hidden prose prose-xs max-w-none dark:prose-invert">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{turn.content}</ReactMarkdown>
                               </div>
                               {turn.tool_input && (

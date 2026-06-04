@@ -129,3 +129,49 @@
     @apply font-sans;
     }
 }
+
+@layer components {
+  .incident-detail-dialog {
+    max-height: 85vh;
+    overflow: hidden;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .incident-detail-body {
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .incident-detail-body > * {
+    min-width: 0;
+  }
+
+  .incident-markdown {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .incident-markdown :where(p, li, blockquote, h1, h2, h3, h4, h5, h6, a, code, strong, em) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .incident-markdown :where(pre) {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+
+  .incident-markdown :where(table) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .incident-markdown :where(img) {
+    max-width: 100%;
+    height: auto;
+  }
+}
