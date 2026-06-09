@@ -5,10 +5,11 @@ import IncidentsPage from '@/pages/IncidentsPage';
 import ConfigPage from '@/pages/ConfigPage';
 import PluginsPage from '@/pages/PluginsPage';
 import EnvironmentPage from '@/pages/EnvironmentPage';
+import KnowledgePage from '@/pages/KnowledgePage';
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/app">
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
@@ -16,6 +17,7 @@ function App() {
           <Route path="/config" element={<ConfigPage />} />
           <Route path="/plugins" element={<PluginsPage />} />
           <Route path="/environment" element={<EnvironmentPage />} />
+          <Route path="/knowledge" element={<KnowledgePage />} />
         </Route>
       </Routes>
     </BrowserRouter>
