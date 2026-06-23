@@ -135,11 +135,13 @@ async def get_config() -> ConfigResponse:
         for key in group_def["keys"]:
             if key in all_items:
                 items[key] = ConfigItem(**all_items[key])
-        groups.append(ConfigGroup(
-            name=group_def["name"],
-            label=group_def["label"],
-            items=items,
-        ))
+        groups.append(
+            ConfigGroup(
+                name=group_def["name"],
+                label=group_def["label"],
+                items=items,
+            )
+        )
 
     return ConfigResponse(groups=groups)
 

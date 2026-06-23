@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlalchemy import func, select, text
 
-from app.api.deps import get_config, get_db_session, get_dynamic
+from app.api.deps import get_config, get_dynamic
 from app.db import session_scope
 from app.db.models.incident import Incident
 from app.plugins import global_registry
@@ -45,8 +45,10 @@ async def get_status() -> SystemStatus:
         async with session_scope() as session:
             await session.execute(text("SELECT 1"))
             # 活跃 incident 数
-            stmt = select(func.count()).select_from(Incident).where(
-                Incident.status.notin_(["resolved", "escalated", "ignored"])
+            stmt = (
+                select(func.count())
+                .select_from(Incident)
+                .where(Incident.status.notin_(["resolved", "escalated", "ignored"]))
             )
             result = await session.execute(stmt)
             active_count = result.scalar() or 0

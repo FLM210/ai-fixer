@@ -13,7 +13,9 @@ class K8sClient(ABC):
     ) -> str: ...
 
     @abstractmethod
-    async def list_pods(self, namespace: str, *, label_selector: str | None = None) -> list[dict[str, Any]]: ...
+    async def list_pods(
+        self, namespace: str, *, label_selector: str | None = None
+    ) -> list[dict[str, Any]]: ...
 
     @abstractmethod
     async def describe_node(self, node_name: str) -> dict[str, Any]: ...
@@ -30,7 +32,9 @@ class K8sClient(ABC):
     async def delete_pod(self, namespace: str, pod_name: str) -> dict[str, Any]: ...
 
     @abstractmethod
-    async def scale_deployment(self, namespace: str, name: str, replicas: int) -> dict[str, Any]: ...
+    async def scale_deployment(
+        self, namespace: str, name: str, replicas: int
+    ) -> dict[str, Any]: ...
 
     @abstractmethod
     async def rollback_deployment(
@@ -66,16 +70,27 @@ class FakeK8sClient(K8sClient):
     async def get_pod_logs(
         self, namespace: str, name: str, *, container: str | None = None, tail_lines: int = 200
     ) -> str:
-        self.calls.append({
-            "action": "get_pod_logs", "namespace": namespace, "name": name,
-            "container": container, "tail_lines": tail_lines,
-        })
+        self.calls.append(
+            {
+                "action": "get_pod_logs",
+                "namespace": namespace,
+                "name": name,
+                "container": container,
+                "tail_lines": tail_lines,
+            }
+        )
         return "fake log line\n"
 
-    async def list_pods(self, namespace: str, *, label_selector: str | None = None) -> list[dict[str, Any]]:
-        self.calls.append({
-            "action": "list_pods", "namespace": namespace, "label_selector": label_selector,
-        })
+    async def list_pods(
+        self, namespace: str, *, label_selector: str | None = None
+    ) -> list[dict[str, Any]]:
+        self.calls.append(
+            {
+                "action": "list_pods",
+                "namespace": namespace,
+                "label_selector": label_selector,
+            }
+        )
         return []
 
     async def describe_node(self, node_name: str) -> dict[str, Any]:
@@ -85,10 +100,14 @@ class FakeK8sClient(K8sClient):
     async def get_events(
         self, namespace: str, *, field_selector: str | None = None, limit: int = 50
     ) -> list[dict[str, Any]]:
-        self.calls.append({
-            "action": "get_events", "namespace": namespace,
-            "field_selector": field_selector, "limit": limit,
-        })
+        self.calls.append(
+            {
+                "action": "get_events",
+                "namespace": namespace,
+                "field_selector": field_selector,
+                "limit": limit,
+            }
+        )
         return []
 
     async def top_pods(self, namespace: str, *, sort_by: str = "cpu") -> list[dict[str, Any]]:
@@ -100,17 +119,27 @@ class FakeK8sClient(K8sClient):
         return {"status": "deleted"}
 
     async def scale_deployment(self, namespace: str, name: str, replicas: int) -> dict[str, Any]:
-        self.calls.append({
-            "action": "scale_deployment", "namespace": namespace, "name": name, "replicas": replicas,
-        })
+        self.calls.append(
+            {
+                "action": "scale_deployment",
+                "namespace": namespace,
+                "name": name,
+                "replicas": replicas,
+            }
+        )
         return {"replicas": replicas}
 
     async def rollback_deployment(
         self, namespace: str, name: str, *, revision: int | None = None
     ) -> dict[str, Any]:
-        self.calls.append({
-            "action": "rollback_deployment", "namespace": namespace, "name": name, "revision": revision,
-        })
+        self.calls.append(
+            {
+                "action": "rollback_deployment",
+                "namespace": namespace,
+                "name": name,
+                "revision": revision,
+            }
+        )
         return {"revision": revision or 1}
 
     async def cordon_node(self, node_name: str) -> dict[str, Any]:

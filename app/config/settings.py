@@ -17,6 +17,7 @@ class LLMSettings(BaseModel):
 
 class PostgresMonitorSettings(BaseModel):
     """监控外部 PostgreSQL 实例的连接配置"""
+
     model_config = ConfigDict(frozen=True)
     dsn: str = ""  # postgresql://user:pass@host:5432/dbname
     enabled: bool = False
@@ -24,6 +25,7 @@ class PostgresMonitorSettings(BaseModel):
 
 class RedisMonitorSettings(BaseModel):
     """监控外部 Redis 实例的连接配置"""
+
     model_config = ConfigDict(frozen=True)
     url: str = ""  # redis://host:6379/0
     enabled: bool = False
@@ -31,6 +33,7 @@ class RedisMonitorSettings(BaseModel):
 
 class AWSMonitorSettings(BaseModel):
     """AWS API 访问配置"""
+
     model_config = ConfigDict(frozen=True)
     access_key_id: str = ""
     secret_access_key: str = ""
@@ -40,15 +43,14 @@ class AWSMonitorSettings(BaseModel):
 
 class SafetyFences(BaseModel):
     """自动修复的安全围栏配置"""
+
     model_config = ConfigDict(frozen=True)
     auto_namespaces: list[str] = Field(default_factory=lambda: ["default", "staging"])
     max_replica_change: int = 5
     max_auto_fixes_per_hour: int = 10
     max_auto_steps_per_incident: int = 3
     cooldown_seconds: int = 300
-    require_approval_verbs: list[str] = Field(
-        default_factory=lambda: ["delete", "drain", "cordon"]
-    )
+    require_approval_verbs: list[str] = Field(default_factory=lambda: ["delete", "drain", "cordon"])
 
 
 class Settings(BaseSettings):
@@ -85,7 +87,7 @@ class Settings(BaseSettings):
 
     # Embedding API（用于 incident 向量记忆，默认复用 LLM 配置）
     embedding_base_url: str = ""  # 为空时使用 llm_base_url
-    embedding_api_key: str = ""   # 为空时使用 llm_api_key
+    embedding_api_key: str = ""  # 为空时使用 llm_api_key
     embedding_model: str = "text-embedding-3-small"
     embedding_enabled: bool = False
 
@@ -160,7 +162,9 @@ class Settings(BaseSettings):
             max_auto_fixes_per_hour=self.fence_max_auto_fixes_per_hour,
             max_auto_steps_per_incident=self.fence_max_auto_steps_per_incident,
             cooldown_seconds=self.fence_cooldown_seconds,
-            require_approval_verbs=[v.strip() for v in self.fence_require_approval_verbs.split(",")],
+            require_approval_verbs=[
+                v.strip() for v in self.fence_require_approval_verbs.split(",")
+            ],
         )
 
 

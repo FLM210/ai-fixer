@@ -10,7 +10,9 @@ from app.plugins.builtin.prom_query import PromQuery
 @respx.mock
 async def test_prom_query_success() -> None:
     respx.get("http://prometheus:9090/api/v1/query").mock(
-        return_value=httpx.Response(200, json={"status": "success", "data": {"resultType": "vector", "result": []}})
+        return_value=httpx.Response(
+            200, json={"status": "success", "data": {"resultType": "vector", "result": []}}
+        )
     )
     plugin = PromQuery(base_url="http://prometheus:9090")
     ctx = PluginContext(incident_id="i-1", actor="agent", trace_id="t-1")

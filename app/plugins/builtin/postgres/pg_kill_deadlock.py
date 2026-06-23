@@ -70,7 +70,9 @@ class PgKillDeadlock(PostgresPluginBase):
                     pids_to_kill = list({r["blocking_pid"] for r in rows})
 
                 if not pids_to_kill:
-                    return PluginResult(ok=True, output={"message": "未发现死锁阻塞者", "killed": []})
+                    return PluginResult(
+                        ok=True, output={"message": "未发现死锁阻塞者", "killed": []}
+                    )
 
                 killed = []
                 for pid in pids_to_kill:

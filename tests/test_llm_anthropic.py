@@ -16,8 +16,12 @@ def _success_payload(*, with_tool: bool = False) -> dict[str, Any]:
             "role": "assistant",
             "content": [
                 {"type": "text", "text": "thinking"},
-                {"type": "tool_use", "id": "tu_1", "name": "k8s.describe_pod",
-                 "input": {"pod": "p", "namespace": "n"}},
+                {
+                    "type": "tool_use",
+                    "id": "tu_1",
+                    "name": "k8s.describe_pod",
+                    "input": {"pod": "p", "namespace": "n"},
+                },
             ],
             "model": "claude-sonnet-4-6",
             "stop_reason": "tool_use",
@@ -71,15 +75,17 @@ async def test_anthropic_tool_use_response() -> None:
     resp = await client.complete(
         system="be helpful",
         messages=[LLMMessage(role="user", content="describe pod")],
-        tools=[ToolSpec(
-            name="k8s.describe_pod",
-            description="describe a pod",
-            input_schema={
-                "type": "object",
-                "properties": {"pod": {"type": "string"}, "namespace": {"type": "string"}},
-                "required": ["pod", "namespace"],
-            },
-        )],
+        tools=[
+            ToolSpec(
+                name="k8s.describe_pod",
+                description="describe a pod",
+                input_schema={
+                    "type": "object",
+                    "properties": {"pod": {"type": "string"}, "namespace": {"type": "string"}},
+                    "required": ["pod", "namespace"],
+                },
+            )
+        ],
     )
     assert resp.stop_reason == "tool_use"
     assert len(resp.tool_uses) == 1

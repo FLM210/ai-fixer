@@ -9,7 +9,16 @@ from app.plugins.registry import global_registry, register
 ALLOWED_VERBS: set[str] = {"get", "describe", "logs", "top", "delete", "scale", "rollout", "cordon"}
 
 # 黑名单: 禁止危险操作
-BLOCKED_VERBS: set[str] = {"apply", "create", "edit", "exec", "cp", "port-forward", "patch", "replace"}
+BLOCKED_VERBS: set[str] = {
+    "apply",
+    "create",
+    "edit",
+    "exec",
+    "cp",
+    "port-forward",
+    "patch",
+    "replace",
+}
 
 
 def _extract_verb(command: str) -> str | None:
@@ -29,7 +38,11 @@ class LLMKubectlAction(Plugin):
     _SCHEMA: ClassVar[dict[str, Any]] = {
         "type": "object",
         "properties": {
-            "command": {"type": "string", "minLength": 1, "description": "kubectl 命令(不含 kubectl 前缀也可)"},
+            "command": {
+                "type": "string",
+                "minLength": 1,
+                "description": "kubectl 命令(不含 kubectl 前缀也可)",
+            },
             "reason": {"type": "string", "description": "执行原因"},
         },
         "required": ["command", "reason"],
@@ -61,10 +74,10 @@ class LLMKubectlAction(Plugin):
             return PluginResult(ok=False, output={}, error="无法解析 kubectl 命令")
 
         if verb in BLOCKED_VERBS:
-            return PluginResult(ok=False, output={}, error=f"拒绝执行: verb \"{verb}\" 在黑名单中")
+            return PluginResult(ok=False, output={}, error=f'拒绝执行: verb "{verb}" 在黑名单中')
 
         if verb not in ALLOWED_VERBS:
-            return PluginResult(ok=False, output={}, error=f"拒绝执行: verb \"{verb}\" 不在白名单中")
+            return PluginResult(ok=False, output={}, error=f'拒绝执行: verb "{verb}" 不在白名单中')
 
         try:
             result = await self._client.exec_kubectl(command)

@@ -69,14 +69,18 @@ class AnthropicClient(LLMClient):
             if m.role == "tool":
                 # 工具结果必须用 tool_result 格式，关联 tool_use_id
                 content = m.content if isinstance(m.content, str) else str(m.content)
-                out.append({
-                    "role": "user",
-                    "content": [{
-                        "type": "tool_result",
-                        "tool_use_id": m.tool_use_id or "",
-                        "content": content,
-                    }],
-                })
+                out.append(
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": m.tool_use_id or "",
+                                "content": content,
+                            }
+                        ],
+                    }
+                )
             elif m.role == "assistant":
                 out.append({"role": "assistant", "content": m.content})
             else:
@@ -91,11 +95,13 @@ class AnthropicClient(LLMClient):
             if block.type == "text":
                 text_parts.append(block.text)
             elif block.type == "tool_use":
-                tool_uses.append(ToolUse(
-                    id=block.id,
-                    name=block.name,
-                    input=dict(block.input) if isinstance(block.input, dict) else {},
-                ))
+                tool_uses.append(
+                    ToolUse(
+                        id=block.id,
+                        name=block.name,
+                        input=dict(block.input) if isinstance(block.input, dict) else {},
+                    )
+                )
         return LLMResponse(
             text="".join(text_parts),
             tool_uses=tool_uses,

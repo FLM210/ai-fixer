@@ -139,8 +139,8 @@ async def list_incidents(
     items = []
     for inc in incidents:
         # proposal count
-        prop_stmt = select(func.count()).select_from(FixProposal).where(
-            FixProposal.incident_id == inc.id
+        prop_stmt = (
+            select(func.count()).select_from(FixProposal).where(FixProposal.incident_id == inc.id)
         )
         prop_result = await session.execute(prop_stmt)
         proposal_count = prop_result.scalar() or 0
@@ -150,22 +150,24 @@ async def list_incidents(
         diag_result = await session.execute(diag_stmt)
         confidence = diag_result.scalar()
 
-        items.append(IncidentSummary(
-            id=str(inc.id),
-            fingerprint=inc.fingerprint,
-            status=inc.status,
-            category=inc.category,
-            severity=inc.severity,
-            service=inc.service,
-            namespace=inc.namespace,
-            summary=inc.summary,
-            created_at=inc.created_at,
-            updated_at=inc.updated_at,
-            resolved_at=inc.resolved_at,
-            resolution_type=inc.resolution_type,
-            confidence=confidence,
-            proposal_count=proposal_count,
-        ))
+        items.append(
+            IncidentSummary(
+                id=str(inc.id),
+                fingerprint=inc.fingerprint,
+                status=inc.status,
+                category=inc.category,
+                severity=inc.severity,
+                service=inc.service,
+                namespace=inc.namespace,
+                summary=inc.summary,
+                created_at=inc.created_at,
+                updated_at=inc.updated_at,
+                resolved_at=inc.resolved_at,
+                resolution_type=inc.resolution_type,
+                confidence=confidence,
+                proposal_count=proposal_count,
+            )
+        )
 
     return IncidentListResponse(items=items, total=total, page=page, page_size=page_size)
 
@@ -182,6 +184,7 @@ async def get_incident(
     incident = result.scalar_one_or_none()
     if not incident:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=404, detail="Incident not found")
 
     # Diagnosis
@@ -232,7 +235,10 @@ async def get_incident(
 
     # LLM Turns
     from app.db.models.llm_turn import LLMTurn
-    turns_stmt = select(LLMTurn).where(LLMTurn.incident_id == incident_id).order_by(LLMTurn.turn_index)
+
+    turns_stmt = (
+        select(LLMTurn).where(LLMTurn.incident_id == incident_id).order_by(LLMTurn.turn_index)
+    )
     turns_result = await session.execute(turns_stmt)
     llm_turns = [
         LLMTurnDetail(

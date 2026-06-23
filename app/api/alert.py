@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
@@ -14,8 +13,8 @@ from sqlalchemy import select
 
 from app.db import session_scope
 from app.db.models.diagnosis import Diagnosis
-from app.db.models.incident import Incident
 from app.db.models.fix_proposal import FixProposal
+from app.db.models.incident import Incident
 from app.graph.state import GraphState
 from app.graph.workflow import create_workflow
 
@@ -82,6 +81,7 @@ async def receive_alert(request: AlertRequest) -> AlertResponse:
     try:
         async with session_scope() as session:
             from app.db.models.environment_context import EnvironmentContext
+
             stmt = select(EnvironmentContext).where(EnvironmentContext.id == 1)
             result = await session.execute(stmt)
             ctx = result.scalar_one_or_none()
@@ -125,7 +125,7 @@ async def receive_alert(request: AlertRequest) -> AlertResponse:
             app.ainvoke(initial_state),
             timeout=300,  # 5 分钟超时
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error("工作流超时: incident=%s", incident_id)
         return AlertResponse(
             incident_id=incident_id,
@@ -208,7 +208,9 @@ async def _save_to_db(result: GraphState) -> None:
                 existing.category = result.get("category") or existing.category
                 existing.service = result.get("service") or existing.service
                 existing.severity = result.get("severity") or existing.severity
-                existing.summary = (result.get("diagnosis_summary") or existing.summary or "")[:1024]
+                existing.summary = (result.get("diagnosis_summary") or existing.summary or "")[
+                    :1024
+                ]
                 existing.llm_cost_tokens = result.get("llm_cost_tokens", 0)
                 incident = existing
                 logger.info("Incident 已存在，更新: %s", incident_id)
@@ -252,6 +254,7 @@ async def _save_to_db(result: GraphState) -> None:
 
             # 保存 LLM 对话轮次
             from app.db.models.llm_turn import LLMTurn
+
             for t in result.get("llm_turns", []):
                 turn = LLMTurn(
                     incident_id=incident.id,
@@ -265,7 +268,11 @@ async def _save_to_db(result: GraphState) -> None:
                 session.add(turn)
 
             await session.flush()
-            logger.info("工作流结果已保存: incident=%s, llm_turns=%d", incident.id, len(result.get("llm_turns", [])))
+            logger.info(
+                "工作流结果已保存: incident=%s, llm_turns=%d",
+                incident.id,
+                len(result.get("llm_turns", [])),
+            )
     except Exception:
         logger.exception("保存工作流结果失败")
 
@@ -273,8 +280,15 @@ async def _save_to_db(result: GraphState) -> None:
 def _sanitize_state(state: GraphState) -> dict[str, Any]:
     """清理状态中的不可序列化字段。"""
     safe_keys = [
-        "incident_id", "trace_id", "category", "severity", "service",
-        "is_duplicate", "diagnosis_summary", "confidence", "final_status",
+        "incident_id",
+        "trace_id",
+        "category",
+        "severity",
+        "service",
+        "is_duplicate",
+        "diagnosis_summary",
+        "confidence",
+        "final_status",
         "llm_cost_tokens",
     ]
     result = {k: state.get(k) for k in safe_keys}

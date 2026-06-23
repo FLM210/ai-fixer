@@ -8,8 +8,14 @@ from app.config.settings import Settings
 
 def _env(monkeypatch: pytest.MonkeyPatch, **kwargs: Any) -> None:
     for key in [
-        "DATABASE_URL", "LLM_PROVIDER", "LLM_BASE_URL", "LLM_API_KEY", "LLM_MODEL",
-        "HTTP_HOST", "HTTP_PORT", "LOG_LEVEL",
+        "DATABASE_URL",
+        "LLM_PROVIDER",
+        "LLM_BASE_URL",
+        "LLM_API_KEY",
+        "LLM_MODEL",
+        "HTTP_HOST",
+        "HTTP_PORT",
+        "LOG_LEVEL",
     ]:
         monkeypatch.delenv(key, raising=False)
     for k, v in kwargs.items():

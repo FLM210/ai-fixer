@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import AsyncIterator
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
@@ -20,13 +20,13 @@ async def _event_generator(queue: asyncio.Queue[str]) -> AsyncIterator[str]:
     """SSE 事件生成器。"""
     try:
         # 发送初始连接确认
-        yield _sse_event("connected", {"time": datetime.now(timezone.utc).isoformat()})
+        yield _sse_event("connected", {"time": datetime.now(UTC).isoformat()})
 
         while True:
             try:
                 data = await asyncio.wait_for(queue.get(), timeout=30)
                 yield data
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # 心跳
                 yield ": heartbeat\n\n"
     except asyncio.CancelledError:

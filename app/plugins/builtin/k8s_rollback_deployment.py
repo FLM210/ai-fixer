@@ -12,7 +12,10 @@ class K8sRollbackDeployment(Plugin):
         "properties": {
             "namespace": {"type": "string", "minLength": 1},
             "deployment": {"type": "string", "minLength": 1},
-            "revision": {"type": "integer", "description": "回滚到指定 revision,不指定则回滚到上一个"},
+            "revision": {
+                "type": "integer",
+                "description": "回滚到指定 revision,不指定则回滚到上一个",
+            },
         },
         "required": ["namespace", "deployment"],
         "additionalProperties": False,

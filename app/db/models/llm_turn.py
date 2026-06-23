@@ -3,12 +3,12 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import text,  DateTime, ForeignKey, Integer, String, Text, func
-from app.db.compat import JSONCompat as JSONB
-from app.db.compat import UUID as PgUUID
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, get_table_args
+from app.db.compat import UUID as PgUUID
+from app.db.compat import JSONCompat as JSONB
 
 
 class LLMTurn(Base):
@@ -23,9 +23,7 @@ class LLMTurn(Base):
         nullable=False,
         index=True,
     )
-    phase: Mapped[str] = mapped_column(
-        String(32), nullable=False
-    )  # triage | diagnose | propose
+    phase: Mapped[str] = mapped_column(String(32), nullable=False)  # triage | diagnose | propose
     turn_index: Mapped[int] = mapped_column(Integer, nullable=False)
     role: Mapped[str] = mapped_column(
         String(16), nullable=False

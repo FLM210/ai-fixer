@@ -74,6 +74,7 @@ class JSONCompat(TypeDecorator):
     def load_dialect_impl(self, dialect: Any) -> Any:
         if dialect.name == "postgresql":
             from sqlalchemy.dialects.postgresql import JSONB
+
             return dialect.type_descriptor(JSONB())
         elif dialect.name == "mysql":
             return dialect.type_descriptor(JSON())
@@ -85,6 +86,7 @@ class JSONCompat(TypeDecorator):
             return None
         if dialect.name == "sqlite":
             import json
+
             return json.dumps(value)
         return value
 
@@ -93,6 +95,7 @@ class JSONCompat(TypeDecorator):
             return None
         if dialect.name == "sqlite" and isinstance(value, str):
             import json
+
             return json.loads(value)
         return value
 
@@ -109,10 +112,12 @@ def get_engine_kwargs(url: str) -> dict[str, Any]:
     }
 
     if db_type == "mysql":
-        kwargs.update({
-            "pool_recycle": 3600,  # MySQL 连接回收时间
-            "pool_timeout": 30,
-        })
+        kwargs.update(
+            {
+                "pool_recycle": 3600,  # MySQL 连接回收时间
+                "pool_timeout": 30,
+            }
+        )
 
     return kwargs
 

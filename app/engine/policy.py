@@ -20,6 +20,7 @@ class ExecutionDecision(StrEnum):
 @dataclass
 class PolicyContext:
     """策略评估所需的 incident 上下文。"""
+
     incident_id: str
     category: str | None = None
     severity: str | None = None

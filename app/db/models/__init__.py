@@ -6,6 +6,9 @@ from app.db.models.fix_execution import FixExecution
 from app.db.models.fix_proposal import FixProposal
 from app.db.models.incident import Incident
 from app.db.models.incident_event import IncidentEvent
+from app.db.models.knowledge_entry import KnowledgeEntry
+from app.db.models.knowledge_relation import KnowledgeRelation
+from app.db.models.knowledge_revision import KnowledgeRevision
 from app.db.models.lark_card_binding import LarkCardBinding
 from app.db.models.llm_turn import LLMTurn
 from app.db.models.repair_outcome import RepairOutcome
@@ -21,8 +24,11 @@ __all__ = [
     "Incident",
     "IncidentEvent",
     "IncidentStatus",
-    "LarkCardBinding",
+    "KnowledgeEntry",
+    "KnowledgeRelation",
+    "KnowledgeRevision",
     "LLMTurn",
+    "LarkCardBinding",
     "RepairOutcome",
     "ResolutionType",
     "RiskLevel",

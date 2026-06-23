@@ -17,6 +17,7 @@ def base_env(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_factory_builds_anthropic(base_env: None, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_PROVIDER", "anthropic")
     from app.config import Settings
+
     settings = Settings()
     client = build_llm_client(settings)
     assert isinstance(client, AnthropicClient)
@@ -28,6 +29,7 @@ def test_factory_builds_anthropic(base_env: None, monkeypatch: pytest.MonkeyPatc
 def test_factory_builds_openai(base_env: None, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_PROVIDER", "openai")
     from app.config import Settings
+
     settings = Settings()
     client = build_llm_client(settings)
     assert isinstance(client, OpenAIClient)
@@ -38,5 +40,6 @@ def test_factory_rejects_unknown(monkeypatch: pytest.MonkeyPatch, base_env: None
     # provider 在 Settings 层就会被拦截,验证 Settings 校验生效
     monkeypatch.setenv("LLM_PROVIDER", "bedrock")
     from app.config import Settings
+
     with pytest.raises(ValueError):
         Settings()

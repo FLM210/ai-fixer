@@ -1,16 +1,17 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import text,  DateTime, ForeignKey, Integer, String, func
-from app.db.compat import JSONCompat as JSONB
-from app.db.compat import UUID as PgUUID
+from sqlalchemy import DateTime, ForeignKey, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, get_table_args
+from app.db.compat import UUID as PgUUID
+from app.db.compat import JSONCompat as JSONB
 
 
 class RepairOutcome(Base):
     """记录每次修复的 before/after 指标对比，用于学习反馈。"""
+
     __tablename__ = "repair_outcomes"
 
     id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), primary_key=True, default=uuid4)

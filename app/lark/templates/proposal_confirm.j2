@@ -1,0 +1,96 @@
+{
+  "header": {
+    "title": {
+      "tag": "plain_text",
+      "content": "🛠️ 修复方案确认 - {{ severity | upper }}"
+    },
+    "template": "{{ severity_color }}"
+  },
+  "elements": [
+    {
+      "tag": "div",
+      "fields": [
+        {
+          "is_short": true,
+          "text": {"tag": "lark_md", "content": "**分类**\n{{ category }}"}
+        },
+        {
+          "is_short": true,
+          "text": {"tag": "lark_md", "content": "**严重程度**\n{{ severity | upper }}"}
+        },
+        {
+          "is_short": true,
+          "text": {"tag": "lark_md", "content": "**置信度**\n{{ confidence | round(0) }}%"}
+        }
+      ]
+    },
+    {"tag": "hr"},
+    {
+      "tag": "div",
+      "text": {
+        "tag": "lark_md",
+        "content": "**诊断结论**\n{{ diagnosis }}"
+      }
+    },
+    {"tag": "hr"},
+    {
+      "tag": "div",
+      "text": {
+        "tag": "lark_md",
+        "content": "**修复方案**\n{{ proposal_text }}"
+      }
+    },
+    {% if high_risk_text %}
+    {"tag": "hr"},
+    {
+      "tag": "div",
+      "text": {
+        "tag": "lark_md",
+        "content": "⚠️ **高风险操作**\n{{ high_risk_text }}"
+      }
+    },
+    {% endif %}
+    {"tag": "hr"},
+    {
+      "tag": "div",
+      "text": {
+        "tag": "lark_md",
+        "content": "请确认是否执行以上修复方案。"
+      }
+    },
+    {
+      "tag": "action",
+      "actions": [
+        {
+          "tag": "button",
+          "text": {"tag": "plain_text", "content": "✅ 批准执行"},
+          "type": "primary",
+          "value": {
+            "action": "approve",
+            "kind": "proposal_approval",
+            "incident_id": "{{ incident_id }}"
+          }
+        },
+        {
+          "tag": "button",
+          "text": {"tag": "plain_text", "content": "❌ 拒绝"},
+          "type": "danger",
+          "value": {
+            "action": "reject",
+            "kind": "proposal_approval",
+            "incident_id": "{{ incident_id }}"
+          }
+        }
+      ]
+    },
+    {
+      "tag": "note",
+      "elements": [
+        {
+          "tag": "plain_text",
+          "content": "incident: {{ incident_id }}"
+        }
+      ]
+    }
+  ]
+}

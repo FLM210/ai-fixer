@@ -1,12 +1,12 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import text,  Boolean, DateTime, ForeignKey, String, func
-from app.db.compat import JSONCompat as JSONB
-from app.db.compat import UUID as PgUUID
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, get_table_args
+from app.db.compat import UUID as PgUUID
+from app.db.compat import JSONCompat as JSONB
 
 
 class IncidentEvent(Base):

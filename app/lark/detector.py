@@ -6,11 +6,11 @@ class AlertDetector:
         self.alert_bot_ids = alert_bot_ids or []
         # 匹配告警格式
         self.alert_pattern = re.compile(
-            r'🔴\s*Firing|Firing:|Alert\s*Firing|\[告警\]|P[0-3]\s*故障|告警详情|'
-            r'PodStatus|CrashLoopBackOff|OOMKilled|NodeNotReady|MemoryPressure|'
-            r'DiskPressure|CPUThrottling|HighMemoryUsage|HighCPUUsage'
+            r"🔴\s*Firing|Firing:|Alert\s*Firing|\[告警\]|P[0-3]\s*故障|告警详情|"
+            r"PodStatus|CrashLoopBackOff|OOMKilled|NodeNotReady|MemoryPressure|"
+            r"DiskPressure|CPUThrottling|HighMemoryUsage|HighCPUUsage"
         )
-        self.ignore_pattern = re.compile(r'✅\s*Resolved|已恢复|人工处理中|Resolved:')
+        self.ignore_pattern = re.compile(r"✅\s*Resolved|已恢复|人工处理中|Resolved:")
 
     def is_alert(self, text: str, sender_id: str = "") -> bool:
         # 如果配置了 alert_bot_ids，只处理来自指定 bot 的消息

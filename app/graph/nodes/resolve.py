@@ -32,39 +32,39 @@ async def _store_incident_memory(state: GraphState) -> None:
 
         # 提取修复信息
         fixes = []
-        for result in state.get('execution_results', []):
-            if result.get('status') == 'success':
-                fixes.append(result.get('plugin_name', ''))
-        fix_applied = ', '.join(fixes) if fixes else None
+        for result in state.get("execution_results", []):
+            if result.get("status") == "success":
+                fixes.append(result.get("plugin_name", ""))
+        fix_applied = ", ".join(fixes) if fixes else None
 
         # 提取 outcome
         outcomes = []
-        for result in state.get('execution_results', []):
+        for result in state.get("execution_results", []):
             outcomes.append(f"{result.get('plugin_name')}: {result.get('status')}")
-        outcome = '; '.join(outcomes) if outcomes else None
+        outcome = "; ".join(outcomes) if outcomes else None
 
         await store.store(
-            incident_id=state['incident_id'],
-            alert_text=state['raw_alert'],
-            category=state.get('category'),
-            diagnosis_summary=state.get('diagnosis_summary'),
+            incident_id=state["incident_id"],
+            alert_text=state["raw_alert"],
+            category=state.get("category"),
+            diagnosis_summary=state.get("diagnosis_summary"),
             fix_applied=fix_applied,
             outcome=outcome,
         )
-        logger.info("已存储 incident %s 的向量记忆", state['incident_id'])
+        logger.info("已存储 incident %s 的向量记忆", state["incident_id"])
     except Exception as e:
         logger.debug("存储 incident 记忆跳过: %s", e)
 
 
 async def resolve_node(state: GraphState) -> GraphState:
     """结案节点: 发送结案卡片,标记事件已解决,存储记忆。"""
-    chat_id = state['source_meta'].get('chat_id', '')
+    chat_id = state["source_meta"].get("chat_id", "")
     await send_resolve_card(
         chat_id,
-        state['incident_id'],
-        state.get('diagnosis_summary') or '已解决',
+        state["incident_id"],
+        state.get("diagnosis_summary") or "已解决",
     )
-    state['final_status'] = 'resolved'
+    state["final_status"] = "resolved"
 
     # 存储 incident 记忆
     await _store_incident_memory(state)

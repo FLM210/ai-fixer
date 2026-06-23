@@ -74,20 +74,22 @@ class OpenAIClient(LLMClient):
         return self._normalize(resp)
 
     @staticmethod
-    def _to_openai_messages(
-        system: str, messages: Sequence[LLMMessage]
-    ) -> list[dict[str, Any]]:
+    def _to_openai_messages(system: str, messages: Sequence[LLMMessage]) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = [{"role": "system", "content": system}]
         for m in messages:
             if m.role == "system":
                 continue
             if m.role == "tool":
                 # tool 角色消息需要关联 tool_call_id
-                out.append({
-                    "role": "tool",
-                    "tool_call_id": m.tool_use_id or "",
-                    "content": m.content if isinstance(m.content, str) else json.dumps(m.content),
-                })
+                out.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": m.tool_use_id or "",
+                        "content": m.content
+                        if isinstance(m.content, str)
+                        else json.dumps(m.content),
+                    }
+                )
             else:
                 out.append({"role": m.role, "content": m.content})
         return out

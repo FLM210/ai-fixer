@@ -10,7 +10,9 @@ from app.plugins.builtin.sentry_get_issue import SentryGetIssue
 @respx.mock
 async def test_sentry_get_issue_success() -> None:
     respx.get("https://sentry.example.com/api/0/issues/12345/").mock(
-        return_value=httpx.Response(200, json={"id": "12345", "title": "TypeError: ...", "status": "unresolved"})
+        return_value=httpx.Response(
+            200, json={"id": "12345", "title": "TypeError: ...", "status": "unresolved"}
+        )
     )
     plugin = SentryGetIssue(base_url="https://sentry.example.com", token="tok_abc")
     ctx = PluginContext(incident_id="i-1", actor="agent", trace_id="t-1")

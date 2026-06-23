@@ -57,6 +57,7 @@ ingest → triage → diagnose → propose → policy_evaluate → await_approva
 - `PluginRegistry` 通过 `pkgutil.iter_modules` 自动发现 `builtin/` 下的插件
 - 两类：`diagnostic`（只读，LLM agent loop 调用）和 `remediation`（写操作，需人工审批）
 - 新增插件：继承 `Plugin`，实现 `spec` 和 `execute`，用 `@register` 注册
+- 自定义插件：放入 `custom_plugins/` 目录即可自动加载（`name` 建议用 `custom.` 前缀）
 
 ### LLM 层（`app/llm/`）
 
@@ -81,11 +82,16 @@ ingest → triage → diagnose → propose → policy_evaluate → await_approva
 
 pgvector 向量存储，用于语义搜索相似历史 incident，辅助诊断决策。
 
-### 可观测性（`app/telemetry/`）
+### 知识库（`app/knowledge/`）
+
+`KnowledgeService` 管理运维知识条目（CRUD + 版本历史 + 向量检索 + 过期检查）。模型：`KnowledgeEntry`、`KnowledgeRevision`，存储在 PostgreSQL + pgvector。
+
+### 可观测性（`app/telemetry/` + `app/observability/`）
 
 - `structlog` 结构化日志
 - Prometheus metrics 暴露在 `/metrics`
 - OpenTelemetry tracing（OTLP gRPC 或 console fallback）
+- `app/observability/logging.py`：请求级日志中间件
 
 ### 分布式协调（`app/utils/`）
 

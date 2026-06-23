@@ -22,6 +22,7 @@ class LarkClient:
             event_handler=event_handler,
             log_level=lark.LogLevel.DEBUG,
         )
+
         # WsClient.start() 使用模块级 loop 变量（导入时已固定），
         # 且内部调用 loop.run_until_complete() 会与已有 event loop 冲突。
         # 解决：在独立线程中创建新 loop，并 patch lark_oapi.ws.client.loop。

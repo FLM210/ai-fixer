@@ -22,8 +22,9 @@ logger = structlog.get_logger(__name__)
 def _load_disabled_plugins() -> list[str]:
     """从数据库加载已禁用的插件列表。"""
     import json as _json
+
     try:
-        from app.config.dynamic import _cast_value
+
         # 直接从 DynamicConfig 缓存读取
         dc = get_dynamic_config()
         val = dc.get("disabled_plugins", "[]")
@@ -38,7 +39,12 @@ def _load_disabled_plugins() -> list[str]:
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     configure_logging(settings.log_level)
-    setup_tracing(service_name='ai-fixer', endpoint=settings.otel_exporter_endpoint if hasattr(settings, 'otel_exporter_endpoint') else None)
+    setup_tracing(
+        service_name="ai-fixer",
+        endpoint=settings.otel_exporter_endpoint
+        if hasattr(settings, "otel_exporter_endpoint")
+        else None,
+    )
 
     # 检查数据库连接
     logger.info("检查数据库连接...")
@@ -54,6 +60,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("检查 Redis 连接...")
     try:
         import redis.asyncio as aioredis
+
         redis_client = aioredis.from_url(settings.redis_url)
         await redis_client.ping()
         await redis_client.close()
@@ -75,8 +82,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # 加载插件（从数据库恢复禁用状态）
     disabled_plugins = _load_disabled_plugins()
     global_registry.reload(disabled_names=disabled_plugins)
-    logger.info("startup", plugins=[s.name for s in global_registry.list_specs(include_disabled=True)],
-                disabled=disabled_plugins)
+    logger.info(
+        "startup",
+        plugins=[s.name for s in global_registry.list_specs(include_disabled=True)],
+        disabled=disabled_plugins,
+    )
 
     # 启动飞书连接
     lark_client = None
@@ -86,11 +96,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
         if lark_mode == "websocket":
             # WebSocket 模式：机器人主动连接飞书
+            import asyncio
+
             from app.lark.client import LarkClient
             from app.lark.detector import AlertDetector
             from app.lark.handler import create_event_handler
 
-            import asyncio
             detector = AlertDetector(alert_bot_ids=settings.alert_bot_ids)
             handler = create_event_handler(detector, main_loop=asyncio.get_running_loop())
             lark_client = LarkClient(settings.lark_app_id, settings.lark_app_secret)
@@ -98,11 +109,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             logger.info("lark_ws_started", app_id=settings.lark_app_id)
         else:
             # HTTP 回调模式：飞书推送事件到 /lark/event
-            from app.lark.handler import create_event_handler
+            import asyncio
+
             from app.lark.detector import AlertDetector
+            from app.lark.handler import create_event_handler
             from app.lark.webhook import set_event_handler
 
-            import asyncio
             detector = AlertDetector(alert_bot_ids=settings.alert_bot_ids)
             handler = create_event_handler(detector, main_loop=asyncio.get_running_loop())
             set_event_handler(handler)
@@ -133,6 +145,7 @@ app.add_middleware(
 
 # ── 显式路由（必须在 StaticFiles mount 之前注册）──
 
+
 @app.get("/")
 async def root() -> dict[str, str]:
     return {"service": "ai-fixer", "version": "0.1.0"}
@@ -161,7 +174,9 @@ async def healthz() -> Response:
         except Exception as e:
             checks["llm"] = {"status": "fail", "error": str(e)[:200]}
 
-    overall = "ok" if all(c["status"] in ("ok", "not_configured") for c in checks.values()) else "fail"
+    overall = (
+        "ok" if all(c["status"] in ("ok", "not_configured") for c in checks.values()) else "fail"
+    )
     body = {"status": overall, "checks": checks}
     status_code = 200 if overall == "ok" else 503
     return Response(

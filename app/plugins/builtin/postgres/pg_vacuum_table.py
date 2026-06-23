@@ -11,8 +11,16 @@ class PgVacuumTable(PostgresPluginBase):
         "type": "object",
         "properties": {
             "dsn": {"type": "string", "description": "PostgreSQL DSN（可选）"},
-            "table_name": {"type": "string", "minLength": 1, "description": "要 vacuum 的表名（schema.table 格式）"},
-            "full": {"type": "boolean", "default": False, "description": "是否执行 VACUUM FULL（会锁表）"},
+            "table_name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "要 vacuum 的表名（schema.table 格式）",
+            },
+            "full": {
+                "type": "boolean",
+                "default": False,
+                "description": "是否执行 VACUUM FULL（会锁表）",
+            },
         },
         "required": ["table_name"],
         "additionalProperties": False,
@@ -50,7 +58,9 @@ class PgVacuumTable(PostgresPluginBase):
             conn = await self._get_connection(dsn)
             try:
                 await conn.execute(vacuum_sql)
-                return PluginResult(ok=True, output={"table": table, "full": full, "executed": True})
+                return PluginResult(
+                    ok=True, output={"table": table, "full": full, "executed": True}
+                )
             finally:
                 await conn.close()
         except Exception as e:

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 from pathlib import Path
 from typing import Any
@@ -45,7 +44,9 @@ class PluginReloadResponse(BaseModel):
 async def _persist_disabled(session: AsyncSession, dynamic: DynamicConfig) -> None:
     """将当前禁用列表持久化到数据库。"""
     disabled = global_registry.get_disabled_list()
-    await dynamic.update(session, {"disabled_plugins": json.dumps(disabled)}, updated_by="plugin_manager")
+    await dynamic.update(
+        session, {"disabled_plugins": json.dumps(disabled)}, updated_by="plugin_manager"
+    )
 
 
 @router.get("/plugins")
@@ -207,18 +208,22 @@ async def list_custom_plugins() -> list[dict[str, str]]:
     result = []
     for item in sorted(custom_dir.iterdir()):
         if item.is_file() and item.suffix == ".py" and not item.name.startswith("_"):
-            result.append({
-                "filename": item.name,
-                "path": str(item),
-                "size": item.stat().st_size,
-            })
+            result.append(
+                {
+                    "filename": item.name,
+                    "path": str(item),
+                    "size": item.stat().st_size,
+                }
+            )
         elif item.is_dir() and not item.name.startswith("_"):
             init_file = item / "__init__.py"
             if init_file.exists():
-                result.append({
-                    "filename": item.name,
-                    "path": str(item),
-                    "size": sum(f.stat().st_size for f in item.rglob("*.py")),
-                })
+                result.append(
+                    {
+                        "filename": item.name,
+                        "path": str(item),
+                        "size": sum(f.stat().st_size for f in item.rglob("*.py")),
+                    }
+                )
 
     return result

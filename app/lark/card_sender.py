@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any
 
 import httpx
 
@@ -113,7 +112,9 @@ async def send_result_card(
     result_lines = []
     for r in execution_results:
         icon = "✅" if r.get("status") == "success" else "❌"
-        result_lines.append(f"{icon} {r.get('plugin_name', 'unknown')}: {r.get('status', 'unknown')}")
+        result_lines.append(
+            f"{icon} {r.get('plugin_name', 'unknown')}: {r.get('status', 'unknown')}"
+        )
 
     execution_text = "\n".join(result_lines) if result_lines else "无执行操作"
 
@@ -173,7 +174,7 @@ async def send_approval_card(
         risk = p.get("risk_level", "unknown")
         risk_icon = {"low": "🟢", "medium": "🟡", "high": "🔴"}.get(risk, "⚪")
         proposal_lines.append(
-            f"{i+1}. {risk_icon} **{p.get('plugin_name', 'unknown')}**\n"
+            f"{i + 1}. {risk_icon} **{p.get('plugin_name', 'unknown')}**\n"
             f"   {p.get('description', '无描述')}\n"
             f"   风险: {risk}"
         )
@@ -190,9 +191,7 @@ async def send_approval_card(
 
     high_risk_text = ", ".join(high_risk_items) if high_risk_items else "无"
 
-    severity_colors = {
-        "p0": "red", "p1": "orange", "p2": "yellow", "p3": "green"
-    }
+    severity_colors = {"p0": "red", "p1": "orange", "p2": "yellow", "p3": "green"}
 
     card = {
         "header": {
@@ -276,4 +275,93 @@ async def send_approval_card(
         ],
     }
 
+    return await _send_to_chat(chat_id, "interactive", card)
+
+
+async def send_diagnosis_confirm_card(
+    chat_id: str,
+    incident_id: str,
+    diagnosis: str,
+    confidence: float,
+    category: str,
+    severity: str,
+    service: str,
+    evidence: dict[str, object] | None = None,
+) -> bool:
+    """发送诊断确认卡片，包含确认/拒绝按钮。"""
+    from app.lark.cards import CardRenderer
+
+    renderer = CardRenderer()
+
+    # 构建证据文本
+    evidence_text = ""
+    if evidence:
+        parts = []
+        for key, val in list(evidence.items())[:3]:
+            snippet = str(val)[:200]
+            parts.append(f"- **{key}**: {snippet}")
+        evidence_text = "\n".join(parts)
+
+    card_json = renderer.render_diagnosis_confirm(
+        incident_id=incident_id,
+        severity=severity,
+        category=category,
+        service=service,
+        diagnosis=diagnosis[:500],
+        confidence=confidence,
+        evidence_text=evidence_text,
+    )
+    card = json.loads(card_json)
+    return await _send_to_chat(chat_id, "interactive", card)
+
+
+async def send_proposal_confirm_card(
+    chat_id: str,
+    incident_id: str,
+    diagnosis: str,
+    confidence: float,
+    category: str,
+    severity: str,
+    proposals: list[dict],
+    policy_decisions: list[dict] | None = None,
+) -> bool:
+    """发送修复方案确认卡片，包含确认/拒绝按钮。"""
+    from app.lark.cards import CardRenderer
+
+    renderer = CardRenderer()
+
+    # 构建方案文本
+    proposal_lines = []
+    for i, p in enumerate(proposals):
+        risk = p.get("risk_level", "unknown")
+        risk_icon = {"low": "🟢", "medium": "🟡", "high": "🔴"}.get(risk, "⚪")
+        proposal_lines.append(
+            f"{i + 1}. {risk_icon} **{p.get('plugin_name', 'unknown')}**\n"
+            f"   {p.get('description', '无描述')}\n"
+            f"   风险: {risk}"
+        )
+    proposal_text = "\n".join(proposal_lines) if proposal_lines else "无修复方案"
+
+    # 构建高风险操作文本
+    high_risk_text = ""
+    if policy_decisions:
+        high_risk_items = []
+        for d in policy_decisions:
+            if d.get("decision") in ("require_approval", "escalate"):
+                idx = d.get("proposal_index", 0)
+                if idx < len(proposals):
+                    high_risk_items.append(proposals[idx].get("plugin_name", "unknown"))
+        if high_risk_items:
+            high_risk_text = ", ".join(high_risk_items)
+
+    card_json = renderer.render_proposal_confirm(
+        incident_id=incident_id,
+        severity=severity,
+        category=category,
+        diagnosis=diagnosis[:500],
+        confidence=confidence,
+        proposal_text=proposal_text,
+        high_risk_text=high_risk_text,
+    )
+    card = json.loads(card_json)
     return await _send_to_chat(chat_id, "interactive", card)

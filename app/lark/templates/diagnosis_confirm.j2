@@ -1,0 +1,92 @@
+{
+  "header": {
+    "title": {
+      "tag": "plain_text",
+      "content": "🔍 故障诊断结果 - {{ severity | upper }}"
+    },
+    "template": "{{ severity_color }}"
+  },
+  "elements": [
+    {
+      "tag": "div",
+      "fields": [
+        {
+          "is_short": true,
+          "text": {"tag": "lark_md", "content": "**分类**\n{{ category }}"}
+        },
+        {
+          "is_short": true,
+          "text": {"tag": "lark_md", "content": "**严重程度**\n{{ severity | upper }}"}
+        },
+        {
+          "is_short": true,
+          "text": {"tag": "lark_md", "content": "**受影响服务**\n{{ service }}"}
+        },
+        {
+          "is_short": true,
+          "text": {"tag": "lark_md", "content": "**置信度**\n{{ confidence | round(0) }}%"}
+        }
+      ]
+    },
+    {"tag": "hr"},
+    {
+      "tag": "div",
+      "text": {
+        "tag": "lark_md",
+        "content": "**诊断结论**\n{{ diagnosis }}"
+      }
+    },
+    {% if evidence_text %}
+    {"tag": "hr"},
+    {
+      "tag": "div",
+      "text": {
+        "tag": "lark_md",
+        "content": "**关键证据**\n{{ evidence_text }}"
+      }
+    },
+    {% endif %}
+    {"tag": "hr"},
+    {
+      "tag": "div",
+      "text": {
+        "tag": "lark_md",
+        "content": "请确认以上诊断是否正确，确认后将制定修复方案。"
+      }
+    },
+    {
+      "tag": "action",
+      "actions": [
+        {
+          "tag": "button",
+          "text": {"tag": "plain_text", "content": "✅ 确认诊断"},
+          "type": "primary",
+          "value": {
+            "action": "approve",
+            "kind": "diagnosis_approval",
+            "incident_id": "{{ incident_id }}"
+          }
+        },
+        {
+          "tag": "button",
+          "text": {"tag": "plain_text", "content": "❌ 拒绝"},
+          "type": "danger",
+          "value": {
+            "action": "reject",
+            "kind": "diagnosis_approval",
+            "incident_id": "{{ incident_id }}"
+          }
+        }
+      ]
+    },
+    {
+      "tag": "note",
+      "elements": [
+        {
+          "tag": "plain_text",
+          "content": "incident: {{ incident_id }}"
+        }
+      ]
+    }
+  ]
+}

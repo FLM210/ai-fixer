@@ -8,6 +8,7 @@ const navItems = [
   { to: '/config', label: '配置管理', icon: '⚙️' },
   { to: '/plugins', label: '插件', icon: '🔌' },
   { to: '/environment', label: '环境上下文', icon: '🌍' },
+  { to: '/knowledge', label: '知识库', icon: '📚' },
 ];
 
 export default function Layout() {

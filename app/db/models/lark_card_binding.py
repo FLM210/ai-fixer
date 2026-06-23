@@ -1,11 +1,11 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import text,  DateTime, ForeignKey, String, func
-from app.db.compat import UUID as PgUUID
+from sqlalchemy import DateTime, ForeignKey, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, get_table_args
+from app.db.compat import UUID as PgUUID
 
 
 class LarkCardBinding(Base):

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -49,7 +51,7 @@ async def update_environment_context(
     session: AsyncSession = Depends(get_db_session),
 ) -> EnvironmentContextResponse:
     """更新生产环境上下文。"""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     stmt = select(EnvironmentContext).where(EnvironmentContext.id == 1)
     result = await session.execute(stmt)
@@ -58,7 +60,7 @@ async def update_environment_context(
     if ctx:
         ctx.content = request.content
         ctx.updated_by = request.updated_by
-        ctx.updated_at = datetime.now(timezone.utc)
+        ctx.updated_at = datetime.now(UTC)
     else:
         ctx = EnvironmentContext(
             id=1,

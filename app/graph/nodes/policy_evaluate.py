@@ -23,7 +23,9 @@ async def policy_evaluate_node(state: GraphState) -> GraphState:
 
     for i, proposal in enumerate(state.get("proposals", [])):
         plugin_name = proposal.get("plugin_name", "")
-        plugin_spec = global_registry.get(plugin_name).spec if global_registry.has(plugin_name) else None
+        plugin_spec = (
+            global_registry.get(plugin_name).spec if global_registry.has(plugin_name) else None
+        )
 
         ctx = PolicyContext(
             incident_id=state["incident_id"],
@@ -31,17 +33,21 @@ async def policy_evaluate_node(state: GraphState) -> GraphState:
             severity=state.get("severity"),
             namespace=proposal.get("args", {}).get("namespace"),
             plugin_name=plugin_name,
-            plugin_risk_level=proposal.get("risk_level", plugin_spec.risk_level if plugin_spec else "medium"),
+            plugin_risk_level=proposal.get(
+                "risk_level", plugin_spec.risk_level if plugin_spec else "medium"
+            ),
             plugin_requires_approval=plugin_spec.requires_approval if plugin_spec else False,
             proposal_args=proposal.get("args", {}),
         )
 
         decision = policy.evaluate(ctx)
-        decisions.append(PolicyDecision(
-            proposal_index=i,
-            decision=decision.value,
-            reason=f"risk={ctx.plugin_risk_level}, ns={ctx.namespace}",
-        ))
+        decisions.append(
+            PolicyDecision(
+                proposal_index=i,
+                decision=decision.value,
+                reason=f"risk={ctx.plugin_risk_level}, ns={ctx.namespace}",
+            )
+        )
 
     state["policy_decisions"] = decisions
     return state

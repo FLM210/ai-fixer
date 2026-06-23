@@ -20,7 +20,9 @@ class PostgresPluginBase(Plugin):
             raise ValueError("未配置 PostgreSQL DSN，请设置 PG_MONITOR_DSN 环境变量或传入 dsn 参数")
         return await asyncpg.connect(target_dsn)
 
-    async def _execute_query(self, ctx: PluginContext, args: dict[str, Any], query: str) -> PluginResult:
+    async def _execute_query(
+        self, ctx: PluginContext, args: dict[str, Any], query: str
+    ) -> PluginResult:
         """执行查询的通用方法。"""
         if ctx.dry_run:
             return PluginResult(ok=True, output={"dry_run": True, "query": query})

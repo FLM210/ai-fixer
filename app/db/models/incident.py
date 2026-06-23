@@ -1,13 +1,13 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import text,  DateTime, Index, Integer, String, func
-from app.db.compat import JSONCompat as JSONB
-from app.db.compat import UUID as PgUUID
+from sqlalchemy import DateTime, Index, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base, get_schema_name, get_table_args
-from app.db.models._enums import IncidentStatus, ResolutionType
+from app.db.base import Base, get_schema_name
+from app.db.compat import UUID as PgUUID
+from app.db.compat import JSONCompat as JSONB
+from app.db.models._enums import IncidentStatus
 
 
 class Incident(Base):
@@ -28,7 +28,10 @@ class Incident(Base):
         DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), onupdate=func.now(), nullable=False
+        DateTime(timezone=True),
+        server_default=text("CURRENT_TIMESTAMP"),
+        onupdate=func.now(),
+        nullable=False,
     )
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     resolution_type: Mapped[str | None] = mapped_column(String(32))  # auto/manual/escalated

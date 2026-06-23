@@ -27,9 +27,13 @@ async def test_get_events_with_field_selector() -> None:
     plugin = K8sGetEvents(k8s_client=mock_client)
     ctx = PluginContext(incident_id="i-1", actor="agent", trace_id="t-1")
 
-    await plugin.execute(ctx, {"namespace": "prod", "field_selector": "involvedObject.name=web-1", "limit": 10})
+    await plugin.execute(
+        ctx, {"namespace": "prod", "field_selector": "involvedObject.name=web-1", "limit": 10}
+    )
 
-    mock_client.get_events.assert_awaited_once_with("prod", field_selector="involvedObject.name=web-1", limit=10)
+    mock_client.get_events.assert_awaited_once_with(
+        "prod", field_selector="involvedObject.name=web-1", limit=10
+    )
 
 
 @pytest.mark.asyncio

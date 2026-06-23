@@ -7,23 +7,23 @@ from typing import Any, Literal, TypedDict
 class ProposalDraft(TypedDict):
     plugin_name: str
     args: dict[str, Any]
-    risk_level: Literal['low', 'medium', 'high', 'critical']
+    risk_level: Literal["low", "medium", "high", "critical"]
     description: str
     expected_outcome: str | None
     rollback_hint: str | None
-    source: Literal['plugin', 'llm_fallback']
+    source: Literal["plugin", "llm_fallback"]
 
 
 class PolicyDecision(TypedDict):
     proposal_index: int
-    decision: Literal['auto_execute', 'require_approval', 'escalate']
+    decision: Literal["auto_execute", "require_approval", "escalate"]
     reason: str
 
 
 class ExecutionRecord(TypedDict):
     proposal_id: str
     plugin_name: str
-    status: Literal['success', 'failure', 'timeout']
+    status: Literal["success", "failure", "timeout"]
     output: dict[str, Any]
     error: str | None
     duration_ms: int
@@ -40,7 +40,7 @@ class GraphState(TypedDict):
 
     # Triage 阶段产出
     category: str | None
-    severity: Literal['p0', 'p1', 'p2', 'p3'] | None
+    severity: Literal["p0", "p1", "p2", "p3"] | None
     service: str | None
     is_duplicate: bool
 
@@ -60,6 +60,10 @@ class GraphState(TypedDict):
     # Approval 阶段
     approval_decisions: dict[str, str]  # {proposal_id: 'approved'/'rejected'}
     awaiting_since: datetime | None
+
+    # 诊断确认阶段
+    diagnosis_approved: bool | None
+    proposals_approved: bool | None
 
     # Execute 阶段
     execution_results: list[ExecutionRecord]

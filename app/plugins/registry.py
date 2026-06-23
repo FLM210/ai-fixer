@@ -1,5 +1,4 @@
 import importlib
-import json
 import os
 import pkgutil
 import sys
@@ -25,7 +24,7 @@ class PluginRegistry:
         self._disabled: set[str] = set()
         self._loaded_plugins: dict[str, str] = {}  # name -> module_path
         self._plugin_sources: dict[str, str] = {}  # name -> "builtin" | "custom"
-        self._plugin_files: dict[str, str] = {}    # name -> file_path
+        self._plugin_files: dict[str, str] = {}  # name -> file_path
 
     def register(self, plugin: Plugin, module_path: str = "") -> None:
         name = plugin.spec.name
@@ -42,7 +41,7 @@ class PluginRegistry:
         # 通过 sys.modules 检查模块文件路径
         if module_path and module_path in sys.modules:
             mod = sys.modules[module_path]
-            if hasattr(mod, '__file__') and mod.__file__:
+            if hasattr(mod, "__file__") and mod.__file__:
                 file_path = mod.__file__
                 if "custom_plugins" in mod.__file__:
                     source = "custom"
@@ -159,9 +158,8 @@ class PluginRegistry:
                     importlib.import_module(module_name)
             except Exception:
                 import logging
-                logging.getLogger(__name__).exception(
-                    "加载自定义插件失败: %s", py_file.name
-                )
+
+                logging.getLogger(__name__).exception("加载自定义插件失败: %s", py_file.name)
 
         # 检查子包
         for sub_dir in custom_dir.iterdir():
@@ -176,6 +174,7 @@ class PluginRegistry:
                             importlib.import_module(pkg_name)
                     except Exception:
                         import logging
+
                         logging.getLogger(__name__).exception(
                             "加载自定义插件包失败: %s", sub_dir.name
                         )
@@ -197,16 +196,18 @@ class PluginRegistry:
         result = []
         for name, plugin in sorted(self._plugins.items()):
             spec = plugin.spec
-            result.append({
-                "name": name,
-                "category": spec.category,
-                "resource_type": spec.resource_type,
-                "risk_level": spec.risk_level,
-                "timeout_seconds": spec.timeout_seconds,
-                "description": spec.description,
-                "enabled": name not in self._disabled,
-                "source": self.get_plugin_source(name),
-            })
+            result.append(
+                {
+                    "name": name,
+                    "category": spec.category,
+                    "resource_type": spec.resource_type,
+                    "risk_level": spec.risk_level,
+                    "timeout_seconds": spec.timeout_seconds,
+                    "description": spec.description,
+                    "enabled": name not in self._disabled,
+                    "source": self.get_plugin_source(name),
+                }
+            )
         return result
 
     def get_disabled_list(self) -> list[str]:

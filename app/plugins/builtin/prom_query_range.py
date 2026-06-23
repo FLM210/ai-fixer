@@ -47,7 +47,9 @@ class PromQueryRange(Plugin):
 
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.get(f"{self._base_url}/api/v1/query_range", params=params, timeout=10)
+                resp = await client.get(
+                    f"{self._base_url}/api/v1/query_range", params=params, timeout=10
+                )
                 resp.raise_for_status()
                 data = resp.json()
         except Exception as e:

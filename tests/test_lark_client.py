@@ -20,11 +20,11 @@ class TestLarkClient:
         client = LarkClient(app_id="test_app_id", app_secret="test_app_secret")
         mock_event_handler = MagicMock()
 
-        with patch('app.lark.client.WsClient') as mock_ws_client_cls:
+        with patch("app.lark.client.WsClient") as mock_ws_client_cls:
             mock_ws_client = MagicMock()
             mock_ws_client_cls.return_value = mock_ws_client
 
-            with patch('app.lark.client.asyncio.create_task') as mock_create_task:
+            with patch("app.lark.client.asyncio.create_task") as mock_create_task:
                 mock_task = MagicMock()
                 mock_create_task.return_value = mock_task
 

@@ -17,7 +17,9 @@ async def test_get_pod_logs_success() -> None:
 
     assert result.ok is True
     assert result.output["logs"] == "line1\nline2\n"
-    mock_client.get_pod_logs.assert_awaited_once_with("prod", "web-abc", container=None, tail_lines=200)
+    mock_client.get_pod_logs.assert_awaited_once_with(
+        "prod", "web-abc", container=None, tail_lines=200
+    )
 
 
 @pytest.mark.asyncio
@@ -27,10 +29,14 @@ async def test_get_pod_logs_with_container() -> None:
     plugin = K8sGetPodLogs(k8s_client=mock_client)
     ctx = PluginContext(incident_id="i-1", actor="agent", trace_id="t-1")
 
-    result = await plugin.execute(ctx, {"namespace": "prod", "pod": "web-abc", "container": "sidecar", "tail_lines": 50})
+    result = await plugin.execute(
+        ctx, {"namespace": "prod", "pod": "web-abc", "container": "sidecar", "tail_lines": 50}
+    )
 
     assert result.ok is True
-    mock_client.get_pod_logs.assert_awaited_once_with("prod", "web-abc", container="sidecar", tail_lines=50)
+    mock_client.get_pod_logs.assert_awaited_once_with(
+        "prod", "web-abc", container="sidecar", tail_lines=50
+    )
 
 
 @pytest.mark.asyncio

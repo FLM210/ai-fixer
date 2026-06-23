@@ -21,22 +21,24 @@ MANAGED_CONFIGS: dict[str, tuple[Any, str, str, bool]] = {
     "llm_model": ("", "str", "LLM 模型名称", False),
     "llm_timeout_seconds": (60.0, "float", "LLM 请求超时时间（秒）", False),
     "llm_max_turns": (8, "int", "LLM 最大交互轮数", False),
-
     # --- 飞书 ---
     "lark_app_id": ("", "str", "飞书应用 App ID", False),
     "lark_app_secret": ("", "str", "飞书应用 App Secret", True),
     "alert_bot_ids": ("", "str", "告警机器人 Sender ID（逗号分隔）", False),
     "card_signing_key": ("", "str", "卡片按钮 HMAC 签名密钥", True),
     "lark_mode": ("websocket", "str", "飞书连接模式（websocket / callback）", False),
-
     # --- Embedding ---
     "embedding_base_url": ("", "str", "Embedding API 地址（为空则复用 LLM）", False),
     "embedding_api_key": ("", "str", "Embedding API 密钥（为空则复用 LLM）", True),
     "embedding_model": ("text-embedding-3-small", "str", "Embedding 模型名称", False),
     "embedding_enabled": (False, "bool", "是否启用向量记忆", False),
-
     # --- 安全围栏 ---
-    "fence_auto_namespaces": ("default,staging", "str", "允许自动修复的命名空间（逗号分隔）", False),
+    "fence_auto_namespaces": (
+        "default,staging",
+        "str",
+        "允许自动修复的命名空间（逗号分隔）",
+        False,
+    ),
     "fence_max_replica_change": (5, "int", "单次修复最大副本数变更", False),
     "fence_max_auto_fixes_per_hour": (10, "int", "每小时最大自动修复次数", False),
     "fence_max_auto_steps_per_incident": (3, "int", "每个 incident 最大自动修复步数", False),
@@ -47,27 +49,26 @@ MANAGED_CONFIGS: dict[str, tuple[Any, str, str, bool]] = {
         "需要审批的操作（逗号分隔）",
         False,
     ),
-
     # --- 监控: PostgreSQL ---
     "pg_monitor_dsn": ("", "str", "PostgreSQL 监控连接串", True),
     "pg_monitor_enabled": (False, "bool", "是否启用 PostgreSQL 监控", False),
-
     # --- 监控: Redis ---
     "redis_monitor_url": ("", "str", "Redis 监控连接地址", False),
     "redis_monitor_enabled": (False, "bool", "是否启用 Redis 监控", False),
-
     # --- 监控: AWS ---
     "aws_access_key_id": ("", "str", "AWS Access Key ID", True),
     "aws_secret_access_key": ("", "str", "AWS Secret Access Key", True),
     "aws_region": ("us-east-1", "str", "AWS 区域", False),
     "aws_enabled": (False, "bool", "是否启用 AWS 监控", False),
-
     # --- 诊断 ---
-    "diagnose_confidence_threshold": (0.7, "float", "置信度阈值，低于此值会触发工具排查（0-1）", False),
-
+    "diagnose_confidence_threshold": (
+        0.7,
+        "float",
+        "置信度阈值，低于此值会触发工具排查（0-1）",
+        False,
+    ),
     # --- 插件 ---
     "disabled_plugins": ("[]", "json", "已禁用的插件列表（JSON 数组）", False),
-
     # --- 其他 ---
     "log_level": ("INFO", "str", "日志级别（DEBUG / INFO / WARNING / ERROR）", False),
 }
@@ -213,13 +214,15 @@ class DynamicConfig:
                 existing.value_type = value_type
                 existing.updated_by = updated_by
             else:
-                session.add(SystemConfig(
-                    key=key,
-                    value=serialized,
-                    value_type=value_type,
-                    description=description,
-                    updated_by=updated_by,
-                ))
+                session.add(
+                    SystemConfig(
+                        key=key,
+                        value=serialized,
+                        value_type=value_type,
+                        description=description,
+                        updated_by=updated_by,
+                    )
+                )
 
             # 更新缓存
             with self._lock:

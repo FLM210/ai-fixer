@@ -35,7 +35,8 @@ class IncidentMemoryStore:
         try:
             await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
             await register_vector(conn)
-            await conn.execute("""
+            await conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS fixer.incident_memories (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     incident_id UUID NOT NULL REFERENCES fixer.incidents(id) ON DELETE CASCADE,
@@ -47,7 +48,9 @@ class IncidentMemoryStore:
                     outcome TEXT,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
                 )
-            """ % self._embedding.dimension)
+            """
+                % self._embedding.dimension
+            )
             await conn.execute("""
                 CREATE INDEX IF NOT EXISTS ix_incident_memories_embedding
                 ON fixer.incident_memories USING ivfflat (embedding vector_cosine_ops)
@@ -77,11 +80,20 @@ class IncidentMemoryStore:
         conn = await asyncpg.connect(self._db_url)
         try:
             await register_vector(conn)
-            await conn.execute("""
+            await conn.execute(
+                """
                 INSERT INTO fixer.incident_memories
                     (incident_id, embedding, alert_text, category, diagnosis_summary, fix_applied, outcome)
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
-            """, incident_id, embedding, alert_text, category, diagnosis_summary, fix_applied, outcome)
+            """,
+                incident_id,
+                embedding,
+                alert_text,
+                category,
+                diagnosis_summary,
+                fix_applied,
+                outcome,
+            )
         finally:
             await conn.close()
 
@@ -99,7 +111,8 @@ class IncidentMemoryStore:
         conn = await asyncpg.connect(self._db_url)
         try:
             await register_vector(conn)
-            rows = await conn.fetch("""
+            rows = await conn.fetch(
+                """
                 SELECT
                     incident_id::text,
                     alert_text,
@@ -112,7 +125,11 @@ class IncidentMemoryStore:
                 WHERE 1 - (embedding <=> $1) >= $2
                 ORDER BY embedding <=> $1
                 LIMIT $3
-            """, embedding, min_similarity, limit)
+            """,
+                embedding,
+                min_similarity,
+                limit,
+            )
 
             return [
                 SimilarIncident(

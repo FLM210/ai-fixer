@@ -10,7 +10,9 @@ from app.plugins.builtin.runbook_search import RunbookSearch
 @respx.mock
 async def test_runbook_search_success() -> None:
     respx.get("https://runbook.example.com/search").mock(
-        return_value=httpx.Response(200, json={"results": [{"title": "Restart nginx", "url": "https://rb.io/1"}]})
+        return_value=httpx.Response(
+            200, json={"results": [{"title": "Restart nginx", "url": "https://rb.io/1"}]}
+        )
     )
     plugin = RunbookSearch(base_url="https://runbook.example.com")
     ctx = PluginContext(incident_id="i-1", actor="agent", trace_id="t-1")

@@ -5,10 +5,10 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExport
 
 
 def setup_tracing(
-    service_name: str = 'k8s-fixer',
+    service_name: str = "k8s-fixer",
     endpoint: str | None = None,
 ) -> trace.Tracer:
-    resource = Resource.create({'service.name': service_name})
+    resource = Resource.create({"service.name": service_name})
     provider = TracerProvider(resource=resource)
 
     exporter: SpanExporter

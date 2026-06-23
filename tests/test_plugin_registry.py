@@ -70,6 +70,7 @@ def test_registry_as_tool_specs_returns_llm_compatible() -> None:
 def test_register_decorator_uses_global_registry() -> None:
     # 先清掉 global registry
     from app.plugins.registry import global_registry
+
     global_registry.clear()
 
     @register(global_registry)

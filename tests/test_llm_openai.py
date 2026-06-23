@@ -16,22 +16,26 @@ def _success_payload(*, with_tool: bool = False) -> dict[str, Any]:
             "object": "chat.completion",
             "created": 0,
             "model": "gpt-4o",
-            "choices": [{
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": None,
-                    "tool_calls": [{
-                        "id": "call_1",
-                        "type": "function",
-                        "function": {
-                            "name": "k8s.describe_pod",
-                            "arguments": json.dumps({"pod": "p", "namespace": "n"}),
-                        },
-                    }],
-                },
-                "finish_reason": "tool_calls",
-            }],
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "tool_calls": [
+                            {
+                                "id": "call_1",
+                                "type": "function",
+                                "function": {
+                                    "name": "k8s.describe_pod",
+                                    "arguments": json.dumps({"pod": "p", "namespace": "n"}),
+                                },
+                            }
+                        ],
+                    },
+                    "finish_reason": "tool_calls",
+                }
+            ],
             "usage": {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30},
         }
     return {
@@ -39,11 +43,13 @@ def _success_payload(*, with_tool: bool = False) -> dict[str, Any]:
         "object": "chat.completion",
         "created": 0,
         "model": "gpt-4o",
-        "choices": [{
-            "index": 0,
-            "message": {"role": "assistant", "content": "hello"},
-            "finish_reason": "stop",
-        }],
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": "hello"},
+                "finish_reason": "stop",
+            }
+        ],
         "usage": {"prompt_tokens": 5, "completion_tokens": 3, "total_tokens": 8},
     }
 
@@ -84,15 +90,17 @@ async def test_openai_tool_call_response() -> None:
     resp = await client.complete(
         system="be helpful",
         messages=[LLMMessage(role="user", content="describe pod")],
-        tools=[ToolSpec(
-            name="k8s.describe_pod",
-            description="describe a pod",
-            input_schema={
-                "type": "object",
-                "properties": {"pod": {"type": "string"}, "namespace": {"type": "string"}},
-                "required": ["pod", "namespace"],
-            },
-        )],
+        tools=[
+            ToolSpec(
+                name="k8s.describe_pod",
+                description="describe a pod",
+                input_schema={
+                    "type": "object",
+                    "properties": {"pod": {"type": "string"}, "namespace": {"type": "string"}},
+                    "required": ["pod", "namespace"],
+                },
+            )
+        ],
     )
     assert resp.stop_reason == "tool_use"
     assert len(resp.tool_uses) == 1

@@ -35,11 +35,13 @@ async def test_create_full_incident_chain() -> None:
         await session.flush()
         incident_id = incident.id
 
-        session.add(IncidentEvent(
-            incident_id=incident_id,
-            event_type="created",
-            payload={"source": "test"},
-        ))
+        session.add(
+            IncidentEvent(
+                incident_id=incident_id,
+                event_type="created",
+                payload={"source": "test"},
+            )
+        )
 
         diagnosis = Diagnosis(
             incident_id=incident_id,
@@ -61,25 +63,30 @@ async def test_create_full_incident_chain() -> None:
         session.add(proposal)
         await session.flush()
 
-        session.add(FixExecution(
-            incident_id=incident_id,
-            proposal_id=proposal.id,
-            approved_by="user_a",
-            approved_at=datetime.now(UTC),
-            status=FixExecutionStatus.PENDING,
-            output={},
-        ))
+        session.add(
+            FixExecution(
+                incident_id=incident_id,
+                proposal_id=proposal.id,
+                approved_by="user_a",
+                approved_at=datetime.now(UTC),
+                status=FixExecutionStatus.PENDING,
+                output={},
+            )
+        )
 
-        session.add(LarkCardBinding(
-            incident_id=incident_id,
-            chat_id="oc_test",
-            message_id=f"om_card_{uuid4()}",
-            card_kind="diagnosis",
-        ))
+        session.add(
+            LarkCardBinding(
+                incident_id=incident_id,
+                chat_id="oc_test",
+                message_id=f"om_card_{uuid4()}",
+                card_kind="diagnosis",
+            )
+        )
 
     # 重开 session 验证
     async with session_scope() as session:
         from sqlalchemy import select
+
         result = await session.execute(select(Incident).where(Incident.id == incident_id))
         loaded = result.scalar_one()
         assert loaded.fingerprint == "test-fp-001"

@@ -64,10 +64,13 @@ class PgReplicationLag(PostgresPluginBase):
                     return PluginResult(ok=True, output={"role": "replica", "lag_seconds": lag})
                 else:
                     rows = await conn.fetch(_QUERY)
-                    return PluginResult(ok=True, output={
-                        "role": "primary",
-                        "replicas": [dict(r) for r in rows],
-                    })
+                    return PluginResult(
+                        ok=True,
+                        output={
+                            "role": "primary",
+                            "replicas": [dict(r) for r in rows],
+                        },
+                    )
             finally:
                 await conn.close()
         except Exception as e:

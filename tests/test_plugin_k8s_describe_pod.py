@@ -7,11 +7,13 @@ from app.plugins.builtin.k8s_describe_pod import K8sDescribePod
 
 @pytest.mark.asyncio
 async def test_describe_pod_success() -> None:
-    fake = FakeK8sClient(describe_pod_payload={
-        "phase": "CrashLoopBackOff",
-        "containers": [{"name": "app", "ready": False, "restartCount": 5}],
-        "events": [{"reason": "BackOff", "message": "Back-off restarting failed container"}],
-    })
+    fake = FakeK8sClient(
+        describe_pod_payload={
+            "phase": "CrashLoopBackOff",
+            "containers": [{"name": "app", "ready": False, "restartCount": 5}],
+            "events": [{"reason": "BackOff", "message": "Back-off restarting failed container"}],
+        }
+    )
     plugin = K8sDescribePod(k8s_client=fake)
     ctx = PluginContext(incident_id="i-1", actor="agent", trace_id="t-1")
 
@@ -55,6 +57,7 @@ async def test_describe_pod_dry_run_does_not_call_client() -> None:
 
 def test_plugin_registered_in_global_registry_after_discover() -> None:
     from app.plugins import global_registry
+
     global_registry.clear()
     global_registry.discover_builtin()
     assert global_registry.has("k8s.describe_pod")
