@@ -32,15 +32,18 @@ make install && cp .env.example .env && docker-compose up -d postgres redis && m
 
 ## 架构
 
-### LangGraph 工作流（10 节点状态机）
+### LangGraph 工作流（12 节点状态机）
 
 ```
-ingest → triage → diagnose → propose → policy_evaluate → await_approval → execute → verify → resolve/escalate
+ingest → triage → diagnose → await_diagnosis_approval → propose → policy_evaluate → await_proposal_approval → execute → verify → resolve/escalate
 ```
 
 - `GraphState`（`app/graph/state.py`）是贯穿全流程的 TypedDict
 - 条件边：重复告警跳过 END，低置信度走 escalate，部分失败回到 propose，全 auto_execute 跳过审批
 - checkpoint 通过 `langgraph-checkpoint-postgres` 持久化
+- `await_diagnosis_approval` 和 `await_proposal_approval` 使用 LangGraph `interrupt()` 暂停工作流，发送飞书卡片等待用户确认
+- `WorkflowRunManager`（`app/lark/workflow_manager.py`）管理被 interrupt 暂停的工作流，支持 resume 和超时清理
+- `workflow_runner.py`（`app/lark/workflow_runner.py`）提供公共逻辑：状态构建、结果保存、checkpointer 工厂
 
 ### 执行策略引擎（`app/engine/policy.py`）
 
@@ -77,6 +80,9 @@ ingest → triage → diagnose → propose → policy_evaluate → await_approva
 - `AlertDetector` 按 sender ID 白名单 + 正则识别告警消息
 - `CardRenderer` 用 Jinja2 渲染飞书消息卡片
 - `CommandParser` 处理 `/status`、`/diag`、`/run`、`/ignore`、`/escalate`、`/help`、`/plugins` 命令
+- `WorkflowRunManager` 管理被 interrupt 暂停的工作流，支持通过卡片按钮回调 resume
+- `workflow_runner.py` 提供公共工作流运行逻辑（状态构建、结果保存、checkpointer 工厂）
+- 卡片按钮回调端点 `/lark/card/action` 处理诊断确认和方案确认两种审批
 
 ### Incident 记忆（`app/memory/`）
 

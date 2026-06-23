@@ -33,10 +33,10 @@
 
 ## LangGraph 工作流
 
-10 节点状态机，处理告警的完整生命周期：
+12 节点状态机，处理告警的完整生命周期:
 
 ```
-ingest → triage → diagnose → propose → policy_evaluate → await_approval → execute → verify → resolve/escalate
+ingest → triage → diagnose → await_diagnosis_approval → propose → policy_evaluate → await_proposal_approval → execute → verify → resolve/escalate
 ```
 
 ### 节点说明
@@ -46,13 +46,50 @@ ingest → triage → diagnose → propose → policy_evaluate → await_approva
 | `ingest` | 创建 Incident，检查重复 | 否 |
 | `triage` | 分类（类别、严重程度、服务） | 1 次 |
 | `diagnose` | 两阶段诊断（初步分析 + 工具排查） | 1-16 次 |
+| `await_diagnosis_approval` | 发送诊断确认卡片，等待用户确认 | 否 |
 | `propose` | 生成修复方案 | 1 次 |
 | `policy_evaluate` | 策略评估（安全围栏） | 否 |
-| `await_approval` | 等待人工审批 | 否 |
+| `await_proposal_approval` | 发送方案确认卡片，等待用户确认 | 否 |
 | `execute` | 执行修复操作 | 否 |
 | `verify` | 验证修复结果 | 否 |
 | `resolve` | 标记解决 | 否 |
 | `escalate` | 升级处理 | 否 |
+
+### 两步人工确认机制
+
+工作流使用 LangGraph `interrupt/resume` 实现两步人工确认:
+
+```
+                          用户确认                  用户确认
+diagnose ──────────→ [诊断确认卡片] ────→ propose ────→ [方案确认卡片] ────→ execute
+                     (interrupt)          (resume)       (interrupt)          (resume)
+```
+
+**确认流程:**
+
+1. `diagnose` 节点完成后进入 `await_diagnosis_approval`
+2. 节点通过飞书 API 发送诊断确认卡片（含诊断结论、置信度、关键证据）
+3. 调用 `interrupt()` 暂停工作流，状态保存到 checkpointer
+4. `WorkflowRunManager` 注册 pending run，等待用户操作
+5. 用户点击卡片按钮 → `/lark/card/action` 回调 → `workflow_manager.resume()`
+6. 确认后工作流继续到 `propose` → `policy_evaluate` → `await_proposal_approval`
+7. 再次 interrupt，发送方案确认卡片（含方案详情、风险等级）
+8. 用户确认后执行修复
+
+**关键模块:**
+
+| 模块 | 文件 | 职责 |
+|------|------|------|
+| `WorkflowRunManager` | `app/lark/workflow_manager.py` | 管理 pending run，支持 resume 和超时清理 (1h) |
+| `workflow_runner` | `app/lark/workflow_runner.py` | 公共逻辑：状态构建、结果保存、checkpointer 工厂 |
+| `await_diagnosis_approval` | `app/graph/nodes/await_diagnosis_approval.py` | 诊断确认节点，发送卡片并 interrupt |
+| `await_proposal_approval` | `app/graph/nodes/await_proposal_approval.py` | 方案确认节点，发送卡片并 interrupt |
+
+**Checkpointer 策略:**
+
+- 生产环境：`AsyncPostgresSaver`（PostgreSQL 持久化，进程重启不丢失）
+- 开发环境：`MemorySaver`（内存存储，轻量快速）
+- 由 `workflow_runner.create_checkpointer()` 工厂方法自动选择
 
 ### 两阶段诊断
 
@@ -76,7 +113,9 @@ ingest → triage → diagnose → propose → policy_evaluate → await_approva
 | 无修复方案 | → resolve |
 | 置信度 < 0.3 | → escalate |
 | 全部 auto_execute | → execute（跳过审批） |
-| 有需审批操作 | → await_approval |
+| 有需审批操作 | → await_proposal_approval |
+| 诊断确认拒绝 | → escalate |
+| 方案确认拒绝 | → escalate |
 | 执行全部成功 | → verify |
 | 执行部分成功 | → propose（重新诊断） |
 | 执行全部失败 | → escalate |

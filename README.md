@@ -9,6 +9,7 @@
 - 🛠️ **Shell 执行**：LLM 可调用 shell 命令进行实时问题排查
 - 📊 **环境上下文**：用户可配置生产环境信息，LLM 据此做更准确判断
 - 💬 **飞书集成**：WebSocket 长连接，告警表情回应，诊断结果卡片
+- ✅ **两步人工确认**：诊断结果和修复方案均需用户通过飞书卡片确认后才继续执行
 - 🔒 **安全围栏**：自动修复需审批，支持命名空间白名单、配额限制
 - 📝 **完整记录**：每轮 LLM 对话、工具调用、执行结果全部持久化
 - 🌐 **管理后台**：React 前端，配置管理、Incident 查看、插件管理
@@ -60,22 +61,32 @@ make dev-ui     # 前端开发服务器
 ## 架构
 
 ```
-飞书群告警 → 机器人检测 → LLM 分类+诊断+修复 → 发送结果卡片
+飞书群告警 → 机器人检测 → LLM 分类+诊断 → 📨 诊断确认卡片
+                                                ↓ 用户确认
+                                        LLM 生成修复方案 → 📨 方案确认卡片
+                                                ↓ 用户确认
+                                          执行修复 → 发送结果卡片
                 ↓
-        ┌──────────────────┐
-        │   LangGraph 工作流  │
-        │  ingest → triage   │
-        │  → diagnose        │
-        │  → propose         │
-        │  → policy_evaluate │
-        │  → await_approval  │
-        │  → execute         │
-        │  → verify          │
-        │  → resolve/escalate│
-        └──────────────────┘
+        ┌──────────────────────────────────────────────┐
+        │              LangGraph 工作流                  │
+        │  ingest → triage → diagnose                   │
+        │       → await_diagnosis_approval (interrupt)  │
+        │       → propose → policy_evaluate              │
+        │       → await_proposal_approval (interrupt)    │
+        │       → execute → verify → resolve/escalate   │
+        └──────────────────────────────────────────────┘
                 ↓
-        PostgreSQL (状态持久化)
+        PostgreSQL (checkpoint 持久化 + 结果存储)
 ```
+
+### 两步人工确认
+
+工作流使用 LangGraph `interrupt/resume` 机制实现两步人工确认:
+
+1. **诊断确认**: 诊断完成后工作流暂停, 发送诊断确认卡片 (含诊断结论、置信度、关键证据), 用户点击"确认诊断"或"拒绝"
+2. **方案确认**: 确认诊断后制定修复方案, 再次暂停并发送方案确认卡片 (含方案详情、风险等级), 用户确认后才执行修复
+
+确认过程由 `WorkflowRunManager` 管理, 支持进程重启后通过 PostgreSQL checkpoint 恢复。超过 1 小时未确认的 pending run 会自动清理并发送超时通知。
 
 ### 插件系统
 
