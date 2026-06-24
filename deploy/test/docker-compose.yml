@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  app:
+    image: ai-fixer:latest
+    container_name: ai-fixer
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres_password_2026!@postgres:5432/fixer
+      - REDIS_URL=redis://:redis_password_2026!@redis:6379/0
+      - SERVE_STATIC=1
+      - LOG_LEVEL=INFO
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fixer.rule=Host(`fixer.dlbppx.online`)"
+      - "traefik.http.routers.fixer.entrypoints=websecure"
+      - "traefik.http.routers.fixer.tls.certresolver=letsencrypt"
+      - "traefik.http.services.fixer.loadbalancer.server.port=8080"
+    networks:
+      - traefik-public
+      - postgres_default
+      - redis_default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  traefik-public:
+    external: true
+  postgres_default:
+    external: true
+  redis_default:
+    external: true

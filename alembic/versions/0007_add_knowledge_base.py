@@ -27,7 +27,7 @@ def upgrade() -> None:
         sa.Column('category', sa.String(64), nullable=True),
         sa.Column('tags', sa.JSON(), nullable=False, server_default=text("'[]'")),
         sa.Column('source_type', sa.String(32), nullable=False, server_default=text("'manual'")),
-        sa.Column('source_incident_id', sa.Uuid(), nullable=True),
+        sa.Column('source_incident_id', sa.String(36), nullable=True),
         sa.Column('status', sa.String(16), nullable=False, server_default=text("'published'")),
         sa.Column('created_by', sa.String(64), nullable=True),
         sa.Column('current_revision', sa.Integer(), nullable=False, server_default=text('1')),

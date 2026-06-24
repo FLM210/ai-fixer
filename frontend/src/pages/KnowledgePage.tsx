@@ -132,7 +132,7 @@ export default function KnowledgePage() {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
+        <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v ?? 'all'); setPage(1); }}>
           <SelectTrigger className="w-32"><SelectValue placeholder="状态" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全部状态</SelectItem>
@@ -142,7 +142,7 @@ export default function KnowledgePage() {
             <SelectItem value="archived">已归档</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={filterCategory} onValueChange={(v) => { setFilterCategory(v); setPage(1); }}>
+        <Select value={filterCategory} onValueChange={(v) => { setFilterCategory(v ?? 'all'); setPage(1); }}>
           <SelectTrigger className="w-32"><SelectValue placeholder="分类" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">全部分类</SelectItem>
@@ -229,7 +229,7 @@ export default function KnowledgePage() {
           <div className="space-y-4">
             <Input placeholder="标题" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
             <div className="flex gap-2">
-              <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
+              <Select value={form.category} onValueChange={v => setForm({ ...form, category: v ?? '' })}>
                 <SelectTrigger className="w-48"><SelectValue placeholder="选择分类" /></SelectTrigger>
                 <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
