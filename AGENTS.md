@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+This file provides guidance to AI agents (Claude Code, Codex, etc.) when working with code in this repository.
 
 ## 项目概述
 
@@ -32,15 +32,18 @@ make install && cp .env.example .env && docker-compose up -d postgres redis && m
 
 ## 架构
 
-### LangGraph 工作流（10 节点状态机）
+### LangGraph 工作流（12 节点状态机）
 
 ```
-ingest → triage → diagnose → propose → policy_evaluate → await_approval → execute → verify → resolve/escalate
+ingest → triage → diagnose → await_diagnosis_approval → propose → policy_evaluate → await_proposal_approval → execute → verify → resolve/escalate
 ```
 
 - `GraphState`（`app/graph/state.py`）是贯穿全流程的 TypedDict
 - 条件边：重复告警跳过 END，低置信度走 escalate，部分失败回到 propose，全 auto_execute 跳过审批
 - checkpoint 通过 `langgraph-checkpoint-postgres` 持久化
+- `await_diagnosis_approval` 和 `await_proposal_approval` 使用 LangGraph `interrupt()` 暂停工作流，发送飞书卡片等待用户确认
+- `WorkflowRunManager`（`app/lark/workflow_manager.py`）管理被 interrupt 暂停的工作流，支持 resume 和超时清理
+- `workflow_runner.py`（`app/lark/workflow_runner.py`）提供公共逻辑：状态构建、结果保存、checkpointer 工厂
 
 ### 执行策略引擎（`app/engine/policy.py`）
 
@@ -57,6 +60,7 @@ ingest → triage → diagnose → propose → policy_evaluate → await_approva
 - `PluginRegistry` 通过 `pkgutil.iter_modules` 自动发现 `builtin/` 下的插件
 - 两类：`diagnostic`（只读，LLM agent loop 调用）和 `remediation`（写操作，需人工审批）
 - 新增插件：继承 `Plugin`，实现 `spec` 和 `execute`，用 `@register` 注册
+- 自定义插件：放入 `custom_plugins/` 目录即可自动加载（`name` 建议用 `custom.` 前缀）
 
 ### LLM 层（`app/llm/`）
 
@@ -76,16 +80,24 @@ ingest → triage → diagnose → propose → policy_evaluate → await_approva
 - `AlertDetector` 按 sender ID 白名单 + 正则识别告警消息
 - `CardRenderer` 用 Jinja2 渲染飞书消息卡片
 - `CommandParser` 处理 `/status`、`/diag`、`/run`、`/ignore`、`/escalate`、`/help`、`/plugins` 命令
+- `WorkflowRunManager` 管理被 interrupt 暂停的工作流，支持通过卡片按钮回调 resume
+- `workflow_runner.py` 提供公共工作流运行逻辑（状态构建、结果保存、checkpointer 工厂）
+- 卡片按钮回调端点 `/lark/card/action` 处理诊断确认和方案确认两种审批
 
 ### Incident 记忆（`app/memory/`）
 
 pgvector 向量存储，用于语义搜索相似历史 incident，辅助诊断决策。
 
-### 可观测性（`app/telemetry/`）
+### 知识库（`app/knowledge/`）
+
+`KnowledgeService` 管理运维知识条目（CRUD + 版本历史 + 向量检索 + 过期检查）。模型：`KnowledgeEntry`、`KnowledgeRevision`，存储在 PostgreSQL + pgvector。
+
+### 可观测性（`app/telemetry/` + `app/observability/`）
 
 - `structlog` 结构化日志
 - Prometheus metrics 暴露在 `/metrics`
 - OpenTelemetry tracing（OTLP gRPC 或 console fallback）
+- `app/observability/logging.py`：请求级日志中间件
 
 ### 分布式协调（`app/utils/`）
 
@@ -98,7 +110,7 @@ React + Vite + TypeScript + shadcn/ui 技术栈，提供仪表盘、Incident 列
 
 - `src/api/` — 后端 API 封装（axios）
 - `src/hooks/` — 自定义 hooks（SSE 实时事件、配置管理）
-- `src/pages/` — 页面组件（Dashboard、Incidents、Config、Plugins）
+- `src/pages/` — 页面组件（Dashboard、Incidents、Config、Plugins、Knowledge）
 - `src/components/` — 通用组件（Layout 侧边栏布局）
 - 开发模式：`make dev-ui`（Vite port 5173，自动代理 `/api` 到后端 8080）
 - 生产模式：`make build-ui` 构建到 `frontend/dist/`，FastAPI 通过 `StaticFiles` 托管
@@ -153,4 +165,5 @@ React + Vite + TypeScript + shadcn/ui 技术栈，提供仪表盘、Incident 列
 - Helm chart：`deploy/helm/k8s-fixer/`（Deployment + Service + RBAC + ConfigMap + Secret + MigrateJob + CleanupCronJob + ServiceMonitor）
 - Grafana dashboard：`deploy/grafana/k8s-fixer-overview.json`
 - 生产 compose：`deploy/docker-compose.prod.yml`
+- 测试部署 compose：`deploy/test/docker-compose.yml`
 - CI：GitHub Actions（lint → type check → migrate → test with coverage）
