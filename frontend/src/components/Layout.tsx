@@ -17,7 +17,7 @@ export default function Layout() {
       {/* 侧边栏 */}
       <aside className="w-56 border-r bg-card flex flex-col">
         <div className="p-4 border-b flex items-center gap-3">
-          <img src="/app/logo.jpg" alt="ai-fixer" className="w-10 h-10 rounded-lg" />
+          <img src="/app/favicon.svg" alt="ai-fixer" className="w-10 h-10" />
           <div>
             <h1 className="text-lg font-bold">ai-fixer</h1>
             <p className="text-xs text-muted-foreground">智能运维修复 Agent</p>
