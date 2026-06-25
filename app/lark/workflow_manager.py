@@ -118,7 +118,7 @@ class WorkflowRunManager:
         self.remove(thread_id)
 
         try:
-            from langgraph.types import GraphInterrupt
+            from langgraph.errors import GraphInterrupt
 
             result = await app.ainvoke(
                 Command(resume={"action": action}),

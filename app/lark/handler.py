@@ -170,7 +170,7 @@ async def _trigger_workflow(
     """触发 LangGraph 工作流处理告警 (WebSocket 模式)。"""
     from uuid import uuid4
 
-    from langgraph.types import GraphInterrupt
+    from langgraph.errors import GraphInterrupt
 
     from app.graph.workflow import create_workflow
     from app.lark.workflow_manager import workflow_manager

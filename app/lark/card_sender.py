@@ -311,7 +311,7 @@ async def send_diagnosis_confirm_card(
         confidence=confidence,
         evidence_text=evidence_text,
     )
-    card = json.loads(card_json)
+    card = json.loads(card_json, strict=False)
     return await _send_to_chat(chat_id, "interactive", card)
 
 
@@ -363,5 +363,5 @@ async def send_proposal_confirm_card(
         proposal_text=proposal_text,
         high_risk_text=high_risk_text,
     )
-    card = json.loads(card_json)
+    card = json.loads(card_json, strict=False)
     return await _send_to_chat(chat_id, "interactive", card)

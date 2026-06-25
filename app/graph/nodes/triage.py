@@ -48,7 +48,18 @@ async def classify_alert(
         )
 
         logger.info("Triage: LLM 响应=%s, tokens=%d", response.text[:200], total_tokens)
-        result: dict[str, Any] = json.loads(response.text)
+        # 从 LLM 响应中提取 JSON（兼容 markdown 代码块等格式）
+        text = response.text.strip()
+        if text.startswith("```"):
+            # 去掉 markdown 代码块
+            lines = text.split("\n")
+            text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+        # 尝试找到第一个 { 和最后一个 }
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1:
+            text = text[start : end + 1]
+        result: dict[str, Any] = json.loads(text, strict=False)
         return result, turns, total_tokens
     except Exception as e:
         logger.error("Triage: LLM 调用失败: %s", e)

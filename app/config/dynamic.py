@@ -228,6 +228,14 @@ class DynamicConfig:
             with self._lock:
                 self._cache[key] = _cast_value(serialized, value_type)
 
+        # 同步到 Settings 对象（让 LLM 等模块立即生效）
+        try:
+            from app.config import get_settings
+
+            self.apply_to_settings(get_settings())
+        except Exception:
+            logger.debug("apply_to_settings after update skipped", exc_info=True)
+
         await session.flush()
         logger.info("dynamic_config_updated", keys=list(configs.keys()))
 

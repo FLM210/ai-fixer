@@ -55,8 +55,7 @@ class UUID(TypeDecorator):
         return str(value)
 
     def load_dialect_impl(self, dialect: Any) -> Any:
-        if dialect.name == "postgresql":
-            return dialect.type_descriptor(PgUUID(as_uuid=self.as_uuid))
+        # 始终使用 String(36)，与迁移文件中的 VARCHAR(36) 保持一致
         return dialect.type_descriptor(types.String(36))
 
 

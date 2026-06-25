@@ -120,7 +120,7 @@ async def save_workflow_result(result: dict[str, Any]) -> None:
             incident_id = result.get("incident_id")
 
             existing_result = await session.execute(
-                select(Incident).where(Incident.id == incident_id)
+                select(Incident).where(Incident.id == str(incident_id))
             )
             existing = existing_result.scalar_one_or_none()
 

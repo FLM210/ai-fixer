@@ -69,7 +69,16 @@ async def generate_proposals(
     )
 
     try:
-        proposals = json.loads(response.text)
+        # 从 LLM 响应中提取 JSON（兼容 markdown 代码块等格式）
+        text = response.text.strip()
+        if text.startswith("```"):
+            lines = text.split("\n")
+            text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+        start = text.find("[")
+        end = text.rfind("]")
+        if start != -1 and end != -1:
+            text = text[start : end + 1]
+        proposals = json.loads(text, strict=False)
         if not isinstance(proposals, list):
             return [], llm_turns, total_tokens
         return (

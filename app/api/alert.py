@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 class AlertRequest(BaseModel):
     text: str
     source: str = "api"
+    chat_id: str = ""
 
 
 class TriageResult(BaseModel):
@@ -95,7 +96,7 @@ async def receive_alert(request: AlertRequest) -> AlertResponse:
         "incident_id": incident_id,
         "trace_id": trace_id,
         "raw_alert": request.text,
-        "source_meta": {"source": request.source},
+        "source_meta": {"source": request.source, "chat_id": request.chat_id},
         "category": None,
         "severity": None,
         "service": None,
@@ -109,6 +110,8 @@ async def receive_alert(request: AlertRequest) -> AlertResponse:
         "policy_decisions": [],
         "approval_decisions": {},
         "awaiting_since": None,
+        "diagnosis_approved": None,
+        "proposals_approved": None,
         "execution_results": [],
         "env_context": env_context,
         "llm_turns": [],
@@ -116,14 +119,105 @@ async def receive_alert(request: AlertRequest) -> AlertResponse:
         "final_status": None,
     }
 
-    # 执行工作流（无 checkpoint 模式）
+    # 执行工作流（使用 checkpointer 支持 interrupt/resume）
+    from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.errors import GraphInterrupt
+
+    checkpointer = MemorySaver()
+    config = {"configurable": {"thread_id": str(uuid4())}}
     workflow = create_workflow()
-    app = workflow.compile()
+    app = workflow.compile(checkpointer=checkpointer)
 
     try:
         result = await asyncio.wait_for(
-            app.ainvoke(initial_state),
-            timeout=300,  # 5 分钟超时
+            app.ainvoke(initial_state, config=config),
+            timeout=300,
+        )
+
+        # 检查是否被 interrupt 暂停（LangGraph 通过 __interrupt__ 字段标识）
+        if isinstance(result, dict) and "__interrupt__" in result:
+            interrupt_type = "unknown"
+            interrupts = result.get("__interrupt__", [])
+            if interrupts and hasattr(interrupts[0], "value"):
+                interrupt_data = interrupts[0].value
+                if isinstance(interrupt_data, dict):
+                    interrupt_type = interrupt_data.get("type", "unknown")
+
+            logger.info(
+                "工作流暂停等待确认: incident=%s type=%s",
+                incident_id, interrupt_type,
+            )
+
+            # 注册到 workflow_manager 以便飞书卡片回调可以 resume
+            if request.chat_id:
+                from app.lark.workflow_manager import workflow_manager
+
+                workflow_manager.register_pending(
+                    thread_id=config["configurable"]["thread_id"],
+                    incident_id=incident_id,
+                    chat_id=request.chat_id,
+                    interrupt_type=interrupt_type,
+                    app=app,
+                    config=config,
+                )
+
+            return AlertResponse(
+                incident_id=incident_id,
+                status="awaiting_approval",
+                triage=TriageResult(
+                    category=result.get("category"),
+                    severity=result.get("severity"),
+                    service=result.get("service"),
+                ),
+                diagnosis=DiagnosisResult(
+                    summary=result.get("diagnosis_summary") or "诊断完成，等待用户确认",
+                    confidence=result.get("confidence"),
+                ),
+                proposals=[],
+                llm_turns=[
+                    LLMTurnResult(
+                        phase=t.get("phase", ""),
+                        turn_index=t.get("turn_index", 0),
+                        role=t.get("role", ""),
+                        content=str(t.get("content", "")),
+                        tool_name=t.get("tool_name"),
+                        tool_input=t.get("tool_input"),
+                    )
+                    for t in result.get("llm_turns", [])
+                ],
+            )
+
+    except GraphInterrupt as e:
+        # 兼容旧版 LangGraph：GraphInterrupt 也可能直接抛出
+        logger.info("GraphInterrupt caught: type=%s", type(e).__name__)
+        interrupt_type = "unknown"
+        if e.interrupts:
+            interrupt_data = e.interrupts[0].value
+            if isinstance(interrupt_data, dict):
+                interrupt_type = interrupt_data.get("type", "unknown")
+
+        logger.info(
+            "工作流暂停等待确认: incident=%s type=%s", incident_id, interrupt_type
+        )
+
+        if request.chat_id:
+            from app.lark.workflow_manager import workflow_manager
+
+            workflow_manager.register_pending(
+                thread_id=config["configurable"]["thread_id"],
+                incident_id=incident_id,
+                chat_id=request.chat_id,
+                interrupt_type=interrupt_type,
+                app=app,
+                config=config,
+            )
+
+        return AlertResponse(
+            incident_id=incident_id,
+            status="awaiting_approval",
+            triage=TriageResult(),
+            diagnosis=DiagnosisResult(summary="诊断完成，等待用户确认"),
+            proposals=[],
         )
     except TimeoutError:
         logger.error("工作流超时: incident=%s", incident_id)
@@ -135,7 +229,7 @@ async def receive_alert(request: AlertRequest) -> AlertResponse:
             proposals=[],
         )
     except Exception as e:
-        logger.exception("工作流异常: incident=%s", incident_id)
+        logger.exception("=== 工作流异常: incident=%s type=%s ===", incident_id, type(e).__name__)
         return AlertResponse(
             incident_id=incident_id,
             status="error",
@@ -198,7 +292,7 @@ async def _save_to_db(result: GraphState) -> None:
 
             # 检查是否已存在
             existing_result = await session.execute(
-                select(Incident).where(Incident.id == incident_id)
+                select(Incident).where(Incident.id == str(incident_id))
             )
             existing = existing_result.scalar_one_or_none()
 

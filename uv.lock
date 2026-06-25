@@ -62,7 +62,7 @@ requires-dist = [
     { name = "jsonschema", specifier = ">=4.23" },
     { name = "langgraph", specifier = ">=1.1.10" },
     { name = "langgraph-checkpoint-postgres", specifier = ">=3.0.5" },
-    { name = "lark-oapi", specifier = ">=1.6.6" },
+    { name = "lark-oapi", specifier = ">=1.6.9" },
     { name = "openai", specifier = ">=1.55" },
     { name = "opentelemetry-api", specifier = ">=1.25" },
     { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = ">=1.25" },
@@ -986,7 +986,7 @@ wheels = [
 
 [[package]]
 name = "lark-oapi"
-version = "1.6.6"
+version = "1.6.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -996,7 +996,7 @@ dependencies = [
     { name = "websockets" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b7/dd/1e356ae491c0cf1b5cf2e3cc8b5fabde3f9804b38a98c9b9f3fd94473e96/lark_oapi-1.6.6-py3-none-any.whl", hash = "sha256:08f06cdaade1d6d6ac6500c1939f05121484f4007608b9de8cbf9203846f2521", size = 7143186, upload-time = "2026-05-25T05:05:55.217Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/b5/00982093154f92ffc2bfe8448367323a07513bd1db1e92672f9573c92ddf/lark_oapi-1.6.9-py3-none-any.whl", hash = "sha256:ebc93c09eba66e3d2d8823d9df4988370b2e0245870b3249b61cdf6d6cd1642c", size = 7801043, upload-time = "2026-06-24T06:15:19.989Z" },
 ]
 
 [[package]]

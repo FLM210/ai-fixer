@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 
@@ -10,6 +11,8 @@ from langgraph.types import interrupt
 from app.graph.state import GraphState
 from app.lark.card_sender import send_proposal_confirm_card
 
+logger = logging.getLogger(__name__)
+
 
 async def await_proposal_approval_node(state: GraphState) -> GraphState:
     """发送修复方案卡片，使用 interrupt() 暂停工作流等待用户确认。"""
@@ -17,16 +20,19 @@ async def await_proposal_approval_node(state: GraphState) -> GraphState:
     incident_id = state["incident_id"]
 
     # 发送修复方案确认卡片
-    await send_proposal_confirm_card(
-        chat_id=chat_id,
-        incident_id=incident_id,
-        diagnosis=state.get("diagnosis_summary") or "无诊断结果",
-        confidence=state.get("confidence") or 0,
-        category=state.get("category") or "unknown",
-        severity=state.get("severity") or "unknown",
-        proposals=state.get("proposals", []),
-        policy_decisions=state.get("policy_decisions", []),
-    )
+    try:
+        await send_proposal_confirm_card(
+            chat_id=chat_id,
+            incident_id=incident_id,
+            diagnosis=state.get("diagnosis_summary") or "无诊断结果",
+            confidence=state.get("confidence") or 0,
+            category=state.get("category") or "unknown",
+            severity=state.get("severity") or "unknown",
+            proposals=state.get("proposals", []),
+            policy_decisions=state.get("policy_decisions", []),
+        )
+    except Exception:
+        logger.warning("发送方案确认卡片失败", exc_info=True)
 
     state["awaiting_since"] = datetime.now(UTC)
 
