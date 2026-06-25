@@ -16,9 +16,12 @@ export default function Layout() {
     <div className="flex h-screen bg-background">
       {/* 侧边栏 */}
       <aside className="w-56 border-r bg-card flex flex-col">
-        <div className="p-4 border-b">
-          <h1 className="text-lg font-bold">ai-fixer</h1>
-          <p className="text-xs text-muted-foreground">智能运维修复 Agent</p>
+        <div className="p-4 border-b flex items-center gap-3">
+          <img src="/logo.jpg" alt="ai-fixer" className="w-10 h-10 rounded-lg" />
+          <div>
+            <h1 className="text-lg font-bold">ai-fixer</h1>
+            <p className="text-xs text-muted-foreground">智能运维修复 Agent</p>
+          </div>
         </div>
         <nav className="flex-1 p-2 space-y-1">
           {navItems.map((item) => (
