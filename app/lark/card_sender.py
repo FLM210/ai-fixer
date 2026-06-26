@@ -126,20 +126,48 @@ async def send_result_card(
     diagnosis: str,
     execution_results: list[dict],
     auto_resolved: bool = False,
+    proposals: list[dict] | None = None,
+    source_message_id: str = "",
 ) -> bool:
     """发送诊断/执行结果卡片。"""
     status_icon = "✅" if auto_resolved else "📊"
     status_text = "已自动修复" if auto_resolved else "分析完成"
 
-    # 构建执行结果文本
+    # 构建执行结果详情
     result_lines = []
-    for r in execution_results:
+    for i, r in enumerate(execution_results):
         icon = "✅" if r.get("status") == "success" else "❌"
-        result_lines.append(
-            f"{icon} {r.get('plugin_name', 'unknown')}: {r.get('status', 'unknown')}"
-        )
+        plugin = r.get("plugin_name", "unknown")
+        status = r.get("status", "unknown")
+        duration = r.get("duration_ms", 0)
+        error = r.get("error")
+        output = r.get("output", {})
+
+        result_lines.append(f"{icon} **{plugin}** — {status} ({duration}ms)")
+
+        # 显示输出摘要
+        if output:
+            output_str = json.dumps(output, ensure_ascii=False)
+            if len(output_str) > 200:
+                output_str = output_str[:200] + "..."
+            result_lines.append(f"   输出: `{output_str}`")
+
+        if error:
+            result_lines.append(f"   错误: {error[:200]}")
 
     execution_text = "\n".join(result_lines) if result_lines else "无执行操作"
+
+    # 构建修复方案摘要
+    proposal_text = ""
+    if proposals:
+        proposal_lines = []
+        for i, p in enumerate(proposals):
+            risk = p.get("risk_level", "unknown")
+            risk_icon = {"low": "🟢", "medium": "🟡", "high": "🔴", "critical": "🔴"}.get(risk, "⚪")
+            proposal_lines.append(
+                f"{i + 1}. {risk_icon} **{p.get('plugin_name', '')}** — {p.get('description', '')[:100]}"
+            )
+        proposal_text = "\n".join(proposal_lines)
 
     card = {
         "header": {
@@ -165,11 +193,25 @@ async def send_result_card(
                     "content": f"**执行结果**\n{execution_text}",
                 },
             },
+            *(
+                [
+                    {"tag": "hr"},
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": f"**修复方案**\n{proposal_text}",
+                        },
+                    },
+                ]
+                if proposal_text
+                else []
+            ),
             {
                 "tag": "note",
                 "elements": [
                     {
-                        "tag": "plain_text",
+                        "tag": "lark_md",
                         "content": f"incident: {incident_id}",
                     }
                 ],

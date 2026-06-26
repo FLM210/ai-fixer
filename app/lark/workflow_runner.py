@@ -88,9 +88,22 @@ async def send_workflow_result(chat_id: str, result: dict[str, Any]) -> None:
             "plugin_name": r.get("plugin_name", "unknown"),
             "status": r.get("status", "unknown"),
             "error": r.get("error"),
+            "output": r.get("output", {}),
+            "duration_ms": r.get("duration_ms", 0),
         }
         for r in execution_results
     ]
+
+    proposals = [
+        {
+            "plugin_name": p.get("plugin_name", ""),
+            "description": p.get("description", ""),
+            "risk_level": p.get("risk_level", "medium"),
+        }
+        for p in result.get("proposals", [])
+    ]
+
+    source_message_id = result.get("source_meta", {}).get("msg_id", "")
 
     try:
         await send_result_card(
@@ -99,6 +112,8 @@ async def send_workflow_result(chat_id: str, result: dict[str, Any]) -> None:
             diagnosis=diagnosis or "无诊断结果",
             execution_results=results_dicts,
             auto_resolved=auto_resolved,
+            proposals=proposals,
+            source_message_id=source_message_id,
         )
         logger.info(
             "工作流结果已发送: incident=%s status=%s", incident_id, final_status
