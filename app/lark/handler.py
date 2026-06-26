@@ -233,6 +233,7 @@ async def _trigger_workflow(
                 interrupt_type=interrupt_type,
                 app=app,
                 config=config,
+                source_message_id=message_id,
             )
             return
 
@@ -274,6 +275,7 @@ async def _trigger_workflow(
             interrupt_type=interrupt_type,
             app=app,
             config=config,
+            source_message_id=message_id,
         )
 
     except Exception:

@@ -246,6 +246,7 @@ async def _resume_workflow(incident_id: str, action: str, user_id: str) -> None:
     chat_id = run.chat_id
     interrupt_type = run.interrupt_type
     thread_id = run.thread_id
+    source_message_id = run.source_message_id
 
     logger.info(
         "恢复工作流: incident=%s action=%s type=%s user=%s",
@@ -266,8 +267,13 @@ async def _resume_workflow(incident_id: str, action: str, user_id: str) -> None:
 
         # 如果最终状态不是 resolved，给原始消息添加失败表情
         final_status = result.get("final_status", "")
-        if final_status and final_status != "resolved":
-            logger.info("工作流未正常解决: status=%s", final_status)
+        if final_status and final_status != "resolved" and source_message_id:
+            try:
+                from app.lark.card_sender import add_reaction
+
+                await add_reaction(source_message_id, "SKULL")
+            except Exception:
+                pass
 
     elif action == "reject":
         label = (
@@ -453,6 +459,7 @@ async def _trigger_workflow(
                 interrupt_type=interrupt_type,
                 app=app,
                 config=config,
+                source_message_id=message_id,
             )
             return
 
@@ -487,6 +494,7 @@ async def _trigger_workflow(
             interrupt_type=interrupt_type,
             app=app,
             config=config,
+            source_message_id=message_id,
         )
 
     except Exception:

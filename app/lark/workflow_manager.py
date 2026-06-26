@@ -27,6 +27,7 @@ class PendingRun:
     app: Any  # CompiledStateGraph 实例
     config: dict[str, Any] = field(default_factory=dict)
     created_at: float = field(default_factory=time.monotonic)
+    source_message_id: str = ""  # 原始告警消息 ID，用于添加表情
 
 
 class WorkflowRunManager:
@@ -46,6 +47,7 @@ class WorkflowRunManager:
         interrupt_type: str,
         app: Any,
         config: dict[str, Any],
+        source_message_id: str = "",
     ) -> None:
         """注册一个被 interrupt 暂停的工作流。"""
         run = PendingRun(
@@ -55,6 +57,7 @@ class WorkflowRunManager:
             interrupt_type=interrupt_type,
             app=app,
             config=config,
+            source_message_id=source_message_id,
         )
         self._pending[thread_id] = run
         self._incident_to_thread[incident_id] = thread_id
@@ -131,6 +134,7 @@ class WorkflowRunManager:
                     interrupt_type=interrupt_type,
                     app=app,
                     config=config,
+                    source_message_id=run.source_message_id,
                 )
                 return None
 
@@ -155,11 +159,20 @@ class WorkflowRunManager:
                 interrupt_type=interrupt_type,
                 app=app,
                 config=config,
+                source_message_id=run.source_message_id,
             )
             return None
 
         except Exception:
             logger.exception("工作流恢复失败: thread=%s", thread_id)
+            # 给原始告警消息添加失败表情
+            if run.source_message_id:
+                try:
+                    from app.lark.card_sender import add_reaction
+
+                    await add_reaction(run.source_message_id, "SKULL")
+                except Exception:
+                    pass
             return None
 
     def remove(self, thread_id: str) -> PendingRun | None:
