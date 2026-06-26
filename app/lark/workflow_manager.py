@@ -110,6 +110,30 @@ class WorkflowRunManager:
                 Command(resume={"action": action, "_resumed": True}),
                 config=config,
             )
+
+            # 检查是否有新的 interrupt（LangGraph 可能通过 __interrupt__ 字段返回）
+            if isinstance(result, dict) and "__interrupt__" in result:
+                interrupt_type = "unknown"
+                interrupts = result.get("__interrupt__", [])
+                if interrupts and hasattr(interrupts[0], "value"):
+                    interrupt_data = interrupts[0].value
+                    if isinstance(interrupt_data, dict):
+                        interrupt_type = interrupt_data.get("type", "unknown")
+
+                logger.info(
+                    "工作流再次暂停: thread=%s type=%s",
+                    thread_id, interrupt_type,
+                )
+                self.register_pending(
+                    thread_id=thread_id,
+                    incident_id=run.incident_id,
+                    chat_id=chat_id,
+                    interrupt_type=interrupt_type,
+                    app=app,
+                    config=config,
+                )
+                return None
+
             logger.info("工作流恢复完成: thread=%s", thread_id)
             return result
 
@@ -121,7 +145,8 @@ class WorkflowRunManager:
                     interrupt_type = interrupt_data.get("type", "unknown")
 
             logger.info(
-                "工作流再次暂停: thread=%s type=%s", thread_id, interrupt_type,
+                "工作流再次暂停: thread=%s incident=%s type=%s",
+                thread_id, run.incident_id, interrupt_type,
             )
             self.register_pending(
                 thread_id=thread_id,
