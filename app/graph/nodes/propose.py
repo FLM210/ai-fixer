@@ -68,10 +68,25 @@ async def generate_proposals(
         {"phase": "propose", "turn_index": 0, "role": "user", "content": prompt}
     ]
 
-    response = await client.complete(
-        system="你是一个全栈 SRE 工程师，精通容器、数据库、中间件、网络、云服务等。只输出 JSON。",
-        messages=[LLMMessage(role="user", content=prompt)],
-    )
+    # 重试逻辑：最多重试 2 次
+    last_error = None
+    for attempt in range(3):
+        try:
+            response = await client.complete(
+                system="你是一个全栈 SRE 工程师，精通容器、数据库、中间件、网络、云服务等。只输出 JSON。",
+                messages=[LLMMessage(role="user", content=prompt)],
+            )
+            break
+        except Exception as e:
+            last_error = e
+            if attempt < 2:
+                logger.warning("生成修复方案失败 (尝试 %d/3): %s", attempt + 1, e)
+                import asyncio
+
+                await asyncio.sleep(2)
+            else:
+                logger.error("生成修复方案失败 (已重试 3 次): %s", e)
+                raise
 
     total_tokens = response.usage.get("input_tokens", 0) + response.usage.get("output_tokens", 0)
     llm_turns.append(
@@ -117,8 +132,9 @@ async def propose_node(state: GraphState) -> GraphState:
     except Exception as e:
         logger.error("生成修复方案失败: %s", e)
         proposals = []
-        turns = [{"phase": "propose", "turn_index": 0, "role": "assistant", "content": f"错误: {e}"}]
+        turns = [{"phase": "propose", "turn_index": 0, "role": "assistant", "content": f"修复方案生成失败: {e}"}]
         tokens = 0
+        state["proposal_error"] = str(e)
     state["proposals"] = proposals
     state["llm_cost_tokens"] = state.get("llm_cost_tokens", 0) + tokens
     state.setdefault("llm_turns", []).extend(turns)

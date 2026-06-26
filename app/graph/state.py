@@ -53,6 +53,7 @@ class GraphState(TypedDict):
 
     # Propose 阶段产出
     proposals: list[ProposalDraft]
+    proposal_error: str | None
 
     # Policy 阶段产出
     policy_decisions: list[PolicyDecision]

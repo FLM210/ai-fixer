@@ -103,6 +103,11 @@ async def send_workflow_result(chat_id: str, result: dict[str, Any]) -> None:
         for p in result.get("proposals", [])
     ]
 
+    # 如果修复方案生成失败，在诊断后附加错误信息
+    proposal_error = result.get("proposal_error")
+    if proposal_error:
+        diagnosis = f"{diagnosis}\n\n⚠️ 修复方案生成失败: {proposal_error}"
+
     source_message_id = result.get("source_meta", {}).get("msg_id", "")
 
     try:
