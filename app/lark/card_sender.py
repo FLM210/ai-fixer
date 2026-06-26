@@ -293,21 +293,25 @@ async def send_diagnosis_confirm_card(
 
     renderer = CardRenderer()
 
+    # 清理文本中的 JSON 特殊字符
+    def _sanitize(text: str) -> str:
+        return text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "").replace("\t", " ")
+
     # 构建证据文本
     evidence_text = ""
     if evidence:
         parts = []
         for key, val in list(evidence.items())[:3]:
-            snippet = str(val)[:200]
+            snippet = _sanitize(str(val)[:200])
             parts.append(f"- **{key}**: {snippet}")
-        evidence_text = "\n".join(parts)
+        evidence_text = "\\n".join(parts)
 
     card_json = renderer.render_diagnosis_confirm(
         incident_id=incident_id,
         severity=severity,
         category=category,
         service=service,
-        diagnosis=diagnosis[:500],
+        diagnosis=_sanitize(diagnosis[:500]),
         confidence=confidence,
         evidence_text=evidence_text,
     )

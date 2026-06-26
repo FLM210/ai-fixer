@@ -35,6 +35,7 @@ class WorkflowRunManager:
     def __init__(self) -> None:
         self._pending: dict[str, PendingRun] = {}
         self._incident_to_thread: dict[str, str] = {}
+        self._chat_to_thread: dict[str, str] = {}
         self._cleanup_task: asyncio.Task[None] | None = None
 
     def register_pending(
@@ -57,6 +58,7 @@ class WorkflowRunManager:
         )
         self._pending[thread_id] = run
         self._incident_to_thread[incident_id] = thread_id
+        self._chat_to_thread[chat_id] = thread_id
         logger.info(
             "注册待恢复工作流: thread=%s incident=%s type=%s",
             thread_id,
@@ -77,11 +79,69 @@ class WorkflowRunManager:
             return self._pending.get(thread_id)
         return None
 
+    def get_by_chat(self, chat_id: str) -> PendingRun | None:
+        """通过 chat_id 获取最新的待恢复工作流。"""
+        thread_id = self._chat_to_thread.get(chat_id)
+        if thread_id:
+            return self._pending.get(thread_id)
+        return None
+
+    async def resume_by_thread(self, thread_id: str, action: str) -> dict[str, Any] | None:
+        """通过 thread_id 直接恢复工作流（跳过 incident_id 查找）。"""
+        run = self._pending.get(thread_id)
+        if not run:
+            logger.warning("未找到待恢复的工作流: thread=%s", thread_id)
+            return None
+
+        logger.info(
+            "恢复工作流: thread=%s incident=%s action=%s type=%s",
+            run.thread_id, run.incident_id, action, run.interrupt_type,
+        )
+
+        chat_id = run.chat_id
+        app = run.app
+        config = run.config
+        self.remove(thread_id)
+
+        try:
+            from langgraph.errors import GraphInterrupt
+
+            result = await app.ainvoke(
+                Command(resume={"action": action}), config=config,
+            )
+            logger.info("工作流恢复完成: thread=%s", thread_id)
+            return result
+
+        except GraphInterrupt as e:
+            interrupt_type = "unknown"
+            if e.interrupts:
+                interrupt_data = e.interrupts[0].value
+                if isinstance(interrupt_data, dict):
+                    interrupt_type = interrupt_data.get("type", "unknown")
+
+            logger.info(
+                "工作流再次暂停: thread=%s type=%s", thread_id, interrupt_type,
+            )
+            self.register_pending(
+                thread_id=thread_id,
+                incident_id=run.incident_id,
+                chat_id=chat_id,
+                interrupt_type=interrupt_type,
+                app=app,
+                config=config,
+            )
+            return None
+
+        except Exception:
+            logger.exception("工作流恢复失败: thread=%s", thread_id)
+            return None
+
     def remove(self, thread_id: str) -> PendingRun | None:
         """移除并返回已完成的工作流。"""
         run = self._pending.pop(thread_id, None)
         if run:
             self._incident_to_thread.pop(run.incident_id, None)
+            self._chat_to_thread.pop(run.chat_id, None)
         return run
 
     async def resume(self, incident_id: str, action: str) -> dict[str, Any] | None:

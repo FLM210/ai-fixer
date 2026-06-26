@@ -207,6 +207,36 @@ async def _trigger_workflow(
         result = await app.ainvoke(initial_state, config=config)
 
         logger.info(
+            "ainvoke returned: keys=%s, has_interrupt=%s",
+            list(result.keys()) if isinstance(result, dict) else type(result),
+            "__interrupt__" in result if isinstance(result, dict) else False,
+        )
+
+        # 检查是否被 interrupt 暂停
+        if isinstance(result, dict) and "__interrupt__" in result:
+            interrupt_type = "unknown"
+            interrupts = result.get("__interrupt__", [])
+            if interrupts and hasattr(interrupts[0], "value"):
+                interrupt_data = interrupts[0].value
+                if isinstance(interrupt_data, dict):
+                    interrupt_type = interrupt_data.get("type", "unknown")
+
+            logger.info(
+                "工作流暂停等待确认: incident=%s thread=%s type=%s",
+                incident_id, thread_id, interrupt_type,
+            )
+
+            workflow_manager.register_pending(
+                thread_id=thread_id,
+                incident_id=incident_id,
+                chat_id=chat_id,
+                interrupt_type=interrupt_type,
+                app=app,
+                config=config,
+            )
+            return
+
+        logger.info(
             "工作流完成: incident=%s status=%s llm_turns=%d",
             incident_id,
             result.get("final_status"),
