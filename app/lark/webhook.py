@@ -263,9 +263,13 @@ async def _resume_workflow(incident_id: str, action: str, user_id: str) -> None:
         logger.info("工作流已完成: incident=%s", incident_id)
         await save_workflow_result(result)
         await send_workflow_result(chat_id, result)
+
+        # 如果最终状态不是 resolved，给原始消息添加失败表情
+        final_status = result.get("final_status", "")
+        if final_status and final_status != "resolved":
+            logger.info("工作流未正常解决: status=%s", final_status)
+
     elif action == "reject":
-        # reject 后工作流走到了 escalate/resolve (不应再 interrupt)
-        # 或 resume 出错, 通知用户
         label = (
             "诊断确认"
             if interrupt_type == "diagnosis_approval"
@@ -487,6 +491,14 @@ async def _trigger_workflow(
 
     except Exception:
         logger.exception("工作流异常: incident=%s", incident_id)
+        # 给原始告警消息添加失败表情
+        if message_id:
+            try:
+                from app.lark.card_sender import add_reaction
+
+                await add_reaction(message_id, "SKULL")
+            except Exception:
+                pass
         await send_text_message(
             chat_id=chat_id,
             text=f"❌ 告警处理异常\nincident: {incident_id}",
