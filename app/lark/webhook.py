@@ -257,7 +257,23 @@ async def _resume_workflow(incident_id: str, action: str, user_id: str) -> None:
     )
 
     # 通过 resume 将 action 传递给 LangGraph interrupt
-    result = await workflow_manager.resume_by_thread(thread_id, action)
+    try:
+        result = await workflow_manager.resume_by_thread(thread_id, action)
+    except Exception:
+        logger.exception("工作流恢复执行异常: incident=%s", incident_id)
+        # 给原始告警消息添加失败表情
+        if source_message_id:
+            try:
+                from app.lark.card_sender import add_reaction
+
+                await add_reaction(source_message_id, "SKULL")
+            except Exception:
+                pass
+        await send_text_message(
+            chat_id=chat_id,
+            text=f"❌ 修复流程异常\nincident: {incident_id}",
+        )
+        return
 
     if result is not None:
         # 工作流已完成, 保存结果并发送

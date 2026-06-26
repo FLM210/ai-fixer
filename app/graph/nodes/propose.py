@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Any
 
 from app.config import get_settings
@@ -6,6 +7,8 @@ from app.graph.state import GraphState, ProposalDraft
 from app.llm import LLMMessage
 from app.llm.factory import build_llm_client
 from app.plugins import global_registry
+
+logger = logging.getLogger(__name__)
 
 PROPOSE_PROMPT = """你是一个全栈 SRE 工程师，负责根据诊断结果制定修复方案。
 
@@ -109,7 +112,13 @@ async def generate_proposals(
 
 
 async def propose_node(state: GraphState) -> GraphState:
-    proposals, turns, tokens = await generate_proposals(state)
+    try:
+        proposals, turns, tokens = await generate_proposals(state)
+    except Exception as e:
+        logger.error("生成修复方案失败: %s", e)
+        proposals = []
+        turns = [{"phase": "propose", "turn_index": 0, "role": "assistant", "content": f"错误: {e}"}]
+        tokens = 0
     state["proposals"] = proposals
     state["llm_cost_tokens"] = state.get("llm_cost_tokens", 0) + tokens
     state.setdefault("llm_turns", []).extend(turns)
