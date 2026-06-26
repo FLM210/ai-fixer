@@ -424,11 +424,7 @@ async def _trigger_workflow(
     from app.graph.workflow import create_workflow
     from app.lark.card_sender import send_text_message
     from app.lark.workflow_manager import workflow_manager
-    from app.lark.workflow_runner import (
-        build_initial_state,
-        create_checkpointer,
-        load_env_context,
-    )
+    from app.lark.workflow_runner import build_initial_state, load_env_context
 
     env_context = await load_env_context()
     incident_id = str(uuid4())
@@ -451,6 +447,8 @@ async def _trigger_workflow(
         from langgraph.checkpoint.memory import MemorySaver
 
         checkpointer = MemorySaver()
+        logger.info("checkpointer id=%s, type=%s", id(checkpointer), type(checkpointer).__name__)
+
         workflow = create_workflow()
         app = workflow.compile(checkpointer=checkpointer)
         config = {"configurable": {"thread_id": thread_id}}

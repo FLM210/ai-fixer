@@ -60,6 +60,29 @@ async def _send_to_chat(chat_id: str, msg_type: str, content: dict) -> bool:
         return True
 
 
+async def _reply_to_message(message_id: str, msg_type: str, content: dict) -> bool:
+    """回复指定消息（在原消息下创建会话线程）。"""
+    token = await _get_tenant_access_token()
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"https://open.feishu.cn/open-apis/im/v1/messages/{message_id}/reply",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "msg_type": msg_type,
+                "content": json.dumps(content, ensure_ascii=False),
+            },
+            timeout=15,
+        )
+        result = resp.json()
+        if result.get("code") != 0:
+            logger.error("回复消息失败: %s", result)
+            return False
+        return True
+
+
 async def send_text_message(chat_id: str, text: str) -> bool:
     """发送纯文本消息。"""
     return await _send_to_chat(chat_id, "text", {"text": text})
@@ -318,6 +341,8 @@ async def send_diagnosis_confirm_card(
         source_message_id=source_message_id,
     )
     card = json.loads(card_json, strict=False)
+    if source_message_id:
+        return await _reply_to_message(source_message_id, "interactive", card)
     return await _send_to_chat(chat_id, "interactive", card)
 
 
@@ -372,4 +397,6 @@ async def send_proposal_confirm_card(
         source_message_id=source_message_id,
     )
     card = json.loads(card_json, strict=False)
+    if source_message_id:
+        return await _reply_to_message(source_message_id, "interactive", card)
     return await _send_to_chat(chat_id, "interactive", card)
