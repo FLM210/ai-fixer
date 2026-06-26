@@ -36,6 +36,7 @@ class CardRenderer:
         diagnosis: str,
         confidence: float,
         evidence_text: str = "",
+        source_message_id: str = "",
     ) -> str:
         severity_colors = {"p0": "red", "p1": "orange", "p2": "yellow", "p3": "green"}
         template = self.env.get_template("diagnosis_confirm.j2")
@@ -48,6 +49,7 @@ class CardRenderer:
             diagnosis=diagnosis,
             confidence=confidence * 100,
             evidence_text=evidence_text,
+            source_message_id=source_message_id,
         )
 
     def render_proposal_confirm(
@@ -59,6 +61,7 @@ class CardRenderer:
         confidence: float,
         proposal_text: str,
         high_risk_text: str = "",
+        source_message_id: str = "",
     ) -> str:
         severity_colors = {"p0": "red", "p1": "orange", "p2": "yellow", "p3": "green"}
         template = self.env.get_template("proposal_confirm.j2")
@@ -71,6 +74,7 @@ class CardRenderer:
             confidence=confidence * 100,
             proposal_text=proposal_text,
             high_risk_text=high_risk_text,
+            source_message_id=source_message_id,
         )
 
     def render_execution_result(self, incident_id: str, results: list[dict]) -> str:

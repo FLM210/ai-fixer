@@ -31,6 +31,7 @@ async def send_diagnosis_card_node(state: GraphState) -> GraphState:
             severity=state.get("severity") or "unknown",
             service=state.get("service") or "unknown",
             evidence=state.get("evidence", {}),
+            source_message_id=state.get("source_meta", {}).get("msg_id", ""),
         )
     except Exception:
         logger.warning("发送诊断确认卡片失败", exc_info=True)

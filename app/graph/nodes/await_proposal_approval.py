@@ -31,6 +31,7 @@ async def send_proposal_card_node(state: GraphState) -> GraphState:
             severity=state.get("severity") or "unknown",
             proposals=state.get("proposals", []),
             policy_decisions=state.get("policy_decisions", []),
+            source_message_id=state.get("source_meta", {}).get("msg_id", ""),
         )
     except Exception:
         logger.warning("发送方案确认卡片失败", exc_info=True)

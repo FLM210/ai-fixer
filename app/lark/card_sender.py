@@ -287,6 +287,7 @@ async def send_diagnosis_confirm_card(
     severity: str,
     service: str,
     evidence: dict[str, object] | None = None,
+    source_message_id: str = "",
 ) -> bool:
     """发送诊断确认卡片，包含确认/拒绝按钮。"""
     from app.lark.cards import CardRenderer
@@ -314,6 +315,7 @@ async def send_diagnosis_confirm_card(
         diagnosis=_sanitize(diagnosis[:500]),
         confidence=confidence,
         evidence_text=evidence_text,
+        source_message_id=source_message_id,
     )
     card = json.loads(card_json, strict=False)
     return await _send_to_chat(chat_id, "interactive", card)
@@ -328,6 +330,7 @@ async def send_proposal_confirm_card(
     severity: str,
     proposals: list[dict],
     policy_decisions: list[dict] | None = None,
+    source_message_id: str = "",
 ) -> bool:
     """发送修复方案确认卡片，包含确认/拒绝按钮。"""
     from app.lark.cards import CardRenderer
@@ -366,6 +369,7 @@ async def send_proposal_confirm_card(
         confidence=confidence,
         proposal_text=proposal_text,
         high_risk_text=high_risk_text,
+        source_message_id=source_message_id,
     )
     card = json.loads(card_json, strict=False)
     return await _send_to_chat(chat_id, "interactive", card)
