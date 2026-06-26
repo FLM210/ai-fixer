@@ -207,7 +207,7 @@ async def lark_card_action(request: Request) -> dict:
         try:
             from app.lark.card_sender import add_reaction
 
-            emoji = "DONE" if action_type == "approve" else "THUMBSDOWN"
+            emoji = "DONE" if action_type == "approve" else "SHAKE"
             await add_reaction(open_message_id, emoji)
         except Exception:
             logger.debug("添加卡片表情回应失败", exc_info=True)
