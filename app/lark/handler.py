@@ -206,11 +206,8 @@ async def _trigger_workflow(
     try:
         result = await app.ainvoke(initial_state, config=config)
 
-        logger.info(
-            "ainvoke returned: keys=%s, has_interrupt=%s",
-            list(result.keys()) if isinstance(result, dict) else type(result),
-            "__interrupt__" in result if isinstance(result, dict) else False,
-        )
+        # ingest_node 会用数据库生成的 UUID 替换 incident_id
+        incident_id = result.get("incident_id", incident_id)
 
         # 检查是否被 interrupt 暂停
         if isinstance(result, dict) and "__interrupt__" in result:

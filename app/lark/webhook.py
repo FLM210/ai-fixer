@@ -447,12 +447,18 @@ async def _trigger_workflow(
     logger.info("启动工作流: incident=%s thread=%s", incident_id, thread_id)
 
     try:
-        checkpointer = await create_checkpointer()
+        # 直接创建 MemorySaver，避免任何缓存
+        from langgraph.checkpoint.memory import MemorySaver
+
+        checkpointer = MemorySaver()
         workflow = create_workflow()
         app = workflow.compile(checkpointer=checkpointer)
         config = {"configurable": {"thread_id": thread_id}}
 
         result = await app.ainvoke(initial_state, config=config)
+
+        # ingest_node 会用数据库生成的 UUID 替换 incident_id
+        incident_id = result.get("incident_id", incident_id)
 
         # 检查是否被 interrupt 暂停
         if isinstance(result, dict) and "__interrupt__" in result:
