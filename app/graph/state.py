@@ -63,7 +63,9 @@ class GraphState(TypedDict):
 
     # 诊断确认阶段
     diagnosis_approved: bool | None
+    diagnosis_confirmed: bool | None  # 标记卡片是否已发送
     proposals_approved: bool | None
+    proposal_confirmed: bool | None  # 标记方案卡片是否已发送
 
     # Execute 阶段
     execution_results: list[ExecutionRecord]

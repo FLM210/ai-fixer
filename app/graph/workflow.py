@@ -36,7 +36,7 @@ def should_continue_after_policy(state: GraphState) -> str:
     """根据策略评估结果决定走向。"""
     decisions = state.get("policy_decisions", [])
     if not decisions:
-        return "await_proposal_approval"
+        return "send_proposal_card"
 
     # 有需要升级的 → 升级
     if any(d["decision"] == "escalate" for d in decisions):
@@ -49,7 +49,7 @@ def should_continue_after_policy(state: GraphState) -> str:
         return "execute"
 
     # 部分或全部需审批 → 走确认流程
-    return "await_proposal_approval"
+    return "send_proposal_card"
 
 
 def should_continue_after_proposal_approval(state: GraphState) -> str:
@@ -76,8 +76,14 @@ def should_continue_after_verify(state: GraphState) -> str:
 
 
 def create_workflow() -> StateGraph[GraphState]:
-    from app.graph.nodes.await_diagnosis_approval import await_diagnosis_approval_node
-    from app.graph.nodes.await_proposal_approval import await_proposal_approval_node
+    from app.graph.nodes.await_diagnosis_approval import (
+        await_diagnosis_approval_node,
+        send_diagnosis_card_node,
+    )
+    from app.graph.nodes.await_proposal_approval import (
+        await_proposal_approval_node,
+        send_proposal_card_node,
+    )
     from app.graph.nodes.diagnose import diagnose_node  # type: ignore[import-untyped]
     from app.graph.nodes.escalate import escalate_node  # type: ignore[import-untyped]
     from app.graph.nodes.execute import execute_node  # type: ignore[import-untyped]
@@ -93,9 +99,11 @@ def create_workflow() -> StateGraph[GraphState]:
     workflow.add_node("ingest", ingest_node)
     workflow.add_node("triage", triage_node)
     workflow.add_node("diagnose", diagnose_node)
+    workflow.add_node("send_diagnosis_card", send_diagnosis_card_node)
     workflow.add_node("await_diagnosis_approval", await_diagnosis_approval_node)
     workflow.add_node("propose", propose_node)
     workflow.add_node("policy_evaluate", policy_evaluate_node)
+    workflow.add_node("send_proposal_card", send_proposal_card_node)
     workflow.add_node("await_proposal_approval", await_proposal_approval_node)
     workflow.add_node("execute", execute_node)
     workflow.add_node("verify", verify_node)
@@ -106,10 +114,12 @@ def create_workflow() -> StateGraph[GraphState]:
 
     workflow.add_conditional_edges("ingest", should_continue_after_ingest)
     workflow.add_edge("triage", "diagnose")
-    workflow.add_edge("diagnose", "await_diagnosis_approval")
+    workflow.add_edge("diagnose", "send_diagnosis_card")
+    workflow.add_edge("send_diagnosis_card", "await_diagnosis_approval")
     workflow.add_conditional_edges("await_diagnosis_approval", should_continue_after_diagnosis_approval)
     workflow.add_conditional_edges("propose", should_continue_after_propose)
     workflow.add_conditional_edges("policy_evaluate", should_continue_after_policy)
+    workflow.add_edge("send_proposal_card", "await_proposal_approval")
     workflow.add_conditional_edges("await_proposal_approval", should_continue_after_proposal_approval)
     workflow.add_conditional_edges("execute", should_continue_after_execute)
     workflow.add_conditional_edges("verify", should_continue_after_verify)

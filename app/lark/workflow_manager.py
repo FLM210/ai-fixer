@@ -107,7 +107,8 @@ class WorkflowRunManager:
             from langgraph.errors import GraphInterrupt
 
             result = await app.ainvoke(
-                Command(resume={"action": action}), config=config,
+                Command(resume={"action": action, "_resumed": True}),
+                config=config,
             )
             logger.info("工作流恢复完成: thread=%s", thread_id)
             return result
@@ -181,7 +182,7 @@ class WorkflowRunManager:
             from langgraph.errors import GraphInterrupt
 
             result = await app.ainvoke(
-                Command(resume={"action": action}),
+                Command(resume={"action": action, "_resumed": True}),
                 config=config,
             )
             logger.info(
