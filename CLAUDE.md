@@ -110,7 +110,7 @@ React + Vite + TypeScript + shadcn/ui 技术栈，提供仪表盘、Incident 列
 
 - `src/api/` — 后端 API 封装（axios）
 - `src/hooks/` — 自定义 hooks（SSE 实时事件、配置管理）
-- `src/pages/` — 页面组件（Dashboard、Incidents、Config、Plugins）
+- `src/pages/` — 页面组件（Dashboard、Incidents、Config、Plugins、Knowledge）
 - `src/components/` — 通用组件（Layout 侧边栏布局）
 - 开发模式：`make dev-ui`（Vite port 5173，自动代理 `/api` 到后端 8080）
 - 生产模式：`make build-ui` 构建到 `frontend/dist/`，FastAPI 通过 `StaticFiles` 托管
@@ -165,4 +165,5 @@ React + Vite + TypeScript + shadcn/ui 技术栈，提供仪表盘、Incident 列
 - Helm chart：`deploy/helm/k8s-fixer/`（Deployment + Service + RBAC + ConfigMap + Secret + MigrateJob + CleanupCronJob + ServiceMonitor）
 - Grafana dashboard：`deploy/grafana/k8s-fixer-overview.json`
 - 生产 compose：`deploy/docker-compose.prod.yml`
+- 测试部署 compose：`deploy/test/docker-compose.yml`
 - CI：GitHub Actions（lint → type check → migrate → test with coverage）
