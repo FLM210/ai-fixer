@@ -1,6 +1,6 @@
 # ai-fixer
 
-<img src="logo.jpg" alt="ai-fixer" width="120" />
+<img src="favicon.svg" alt="ai-fixer" width="240" />
 
 智能运维修复 Agent。以飞书群聊为交互界面，自动诊断告警、提出修复方案，支持全自动执行（带安全围栏）和历史 incident 学习。
 
