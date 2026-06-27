@@ -20,7 +20,7 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/your-org/ai-fixer.git
+git clone https://github.com/FLM210/ai-fixer.git
 cd ai-fixer
 
 # 一键启动（含 PG + Redis + 后端 + 前端）

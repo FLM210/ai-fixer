@@ -6,7 +6,7 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/your-org/ai-fixer.git
+git clone https://github.com/FLM210/ai-fixer.git
 cd ai-fixer
 
 # 配置环境变量
