@@ -5,8 +5,8 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres_password_2026!@127.0.0.1:5432/fixer
-      - REDIS_URL=redis://:redis_password_2026!@127.0.0.1:6379/0
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/fixer}
+      - REDIS_URL=${REDIS_URL:-redis://127.0.0.1:6379/0}
       - SERVE_STATIC=1
       - LOG_LEVEL=INFO
     labels:
