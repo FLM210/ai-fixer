@@ -70,11 +70,13 @@ make dev-ui     # 前端开发服务器
                                           执行修复 → 发送结果卡片
                 ↓
         ┌──────────────────────────────────────────────┐
-        │              LangGraph 工作流                  │
+        │          LangGraph 工作流 (13 节点)            │
         │  ingest → triage → diagnose                   │
+        │       → send_diagnosis_card                   │
         │       → await_diagnosis_approval (interrupt)  │
         │       → propose → policy_evaluate              │
-        │       → await_proposal_approval (interrupt)    │
+        │       → send_proposal_card                    │
+        │       → await_proposal_approval (interrupt)   │
         │       → execute → verify → resolve/escalate   │
         └──────────────────────────────────────────────┘
                 ↓

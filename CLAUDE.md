@@ -32,10 +32,14 @@ make install && cp .env.example .env && docker-compose up -d postgres redis && m
 
 ## 架构
 
-### LangGraph 工作流（12 节点状态机）
+### LangGraph 工作流（13 节点状态机）
 
 ```
-ingest → triage → diagnose → await_diagnosis_approval → propose → policy_evaluate → await_proposal_approval → execute → verify → resolve/escalate
+ingest → triage → diagnose
+  → send_diagnosis_card → await_diagnosis_approval (interrupt)
+  → propose → policy_evaluate
+  → send_proposal_card → await_proposal_approval (interrupt)
+  → execute → verify → resolve/escalate
 ```
 
 - `GraphState`（`app/graph/state.py`）是贯穿全流程的 TypedDict
@@ -83,6 +87,9 @@ ingest → triage → diagnose → await_diagnosis_approval → propose → poli
 - `WorkflowRunManager` 管理被 interrupt 暂停的工作流，支持通过卡片按钮回调 resume
 - `workflow_runner.py` 提供公共工作流运行逻辑（状态构建、结果保存、checkpointer 工厂）
 - 卡片按钮回调端点 `/lark/card/action` 处理诊断确认和方案确认两种审批
+- 加密策略: 飞书事件通过 AES-256-CBC 加密，需配置 Encrypt Key 和 Token
+- 告警机器人发消息时必须 @aifixer 的 `open_id`（非 `app_id`）才能触发事件
+- 卡片确认结果作为回复发送到原始告警消息（会话线程模式）
 
 ### Incident 记忆（`app/memory/`）
 

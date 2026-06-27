@@ -13,7 +13,7 @@
 │  ┌──────────┐  ┌──────────────┐  ┌───────────────────────┐  │
 │  │ 飞书模块  │  │ LangGraph    │  │ 插件系统              │  │
 │  │ 消息检测  │  │ 工作流引擎    │  │ K8s/DB/Monitor/Shell  │  │
-│  │ 卡片发送  │  │ 10 节点状态机 │  │ 27+ 内置插件          │  │
+│  │ 卡片发送  │  │ 13 节点状态机 │  │ 27+ 内置插件          │  │
 │  └──────────┘  └──────────────┘  └───────────────────────┘  │
 │  ┌──────────┐  ┌──────────────┐  ┌───────────────────────┐  │
 │  │ LLM 层   │  │ 配置系统      │  │ 可观测性              │  │
@@ -33,10 +33,14 @@
 
 ## LangGraph 工作流
 
-12 节点状态机，处理告警的完整生命周期:
+13 节点状态机，处理告警的完整生命周期:
 
 ```
-ingest → triage → diagnose → await_diagnosis_approval → propose → policy_evaluate → await_proposal_approval → execute → verify → resolve/escalate
+ingest → triage → diagnose
+  → send_diagnosis_card → await_diagnosis_approval (interrupt)
+  → propose → policy_evaluate
+  → send_proposal_card → await_proposal_approval (interrupt)
+  → execute → verify → resolve/escalate
 ```
 
 ### 节点说明
@@ -46,10 +50,12 @@ ingest → triage → diagnose → await_diagnosis_approval → propose → poli
 | `ingest` | 创建 Incident，检查重复 | 否 |
 | `triage` | 分类（类别、严重程度、服务） | 1 次 |
 | `diagnose` | 两阶段诊断（初步分析 + 工具排查） | 1-16 次 |
-| `await_diagnosis_approval` | 发送诊断确认卡片，等待用户确认 | 否 |
+| `send_diagnosis_card` | 发送诊断确认卡片到飞书群 | 否 |
+| `await_diagnosis_approval` | 暂停工作流，等待用户确认诊断 | 否 |
 | `propose` | 生成修复方案 | 1 次 |
 | `policy_evaluate` | 策略评估（安全围栏） | 否 |
-| `await_proposal_approval` | 发送方案确认卡片，等待用户确认 | 否 |
+| `send_proposal_card` | 发送方案确认卡片到飞书群 | 否 |
+| `await_proposal_approval` | 暂停工作流，等待用户确认方案 | 否 |
 | `execute` | 执行修复操作 | 否 |
 | `verify` | 验证修复结果 | 否 |
 | `resolve` | 标记解决 | 否 |
@@ -67,14 +73,13 @@ diagnose ──────────→ [诊断确认卡片] ────→ 
 
 **确认流程:**
 
-1. `diagnose` 节点完成后进入 `await_diagnosis_approval`
-2. 节点通过飞书 API 发送诊断确认卡片（含诊断结论、置信度、关键证据）
-3. 调用 `interrupt()` 暂停工作流，状态保存到 checkpointer
-4. `WorkflowRunManager` 注册 pending run，等待用户操作
-5. 用户点击卡片按钮 → `/lark/card/action` 回调 → `workflow_manager.resume()`
-6. 确认后工作流继续到 `propose` → `policy_evaluate` → `await_proposal_approval`
-7. 再次 interrupt，发送方案确认卡片（含方案详情、风险等级）
-8. 用户确认后执行修复
+1. `diagnose` 节点完成后进入 `send_diagnosis_card`（发送诊断确认卡片到飞书群）
+2. 随后进入 `await_diagnosis_approval`，调用 `interrupt()` 暂停工作流
+3. `WorkflowRunManager` 注册 pending run，等待用户操作
+4. 用户点击卡片按钮 → `/lark/card/action` 回调 → `workflow_manager.resume_by_thread()`
+5. 确认后工作流继续到 `propose` → `policy_evaluate` → `send_proposal_card`（发送方案确认卡片）
+6. 随后进入 `await_proposal_approval`，再次 interrupt，等待方案确认
+7. 用户确认后执行修复
 
 **关键模块:**
 
@@ -82,8 +87,8 @@ diagnose ──────────→ [诊断确认卡片] ────→ 
 |------|------|------|
 | `WorkflowRunManager` | `app/lark/workflow_manager.py` | 管理 pending run，支持 resume 和超时清理 (1h) |
 | `workflow_runner` | `app/lark/workflow_runner.py` | 公共逻辑：状态构建、结果保存、checkpointer 工厂 |
-| `await_diagnosis_approval` | `app/graph/nodes/await_diagnosis_approval.py` | 诊断确认节点，发送卡片并 interrupt |
-| `await_proposal_approval` | `app/graph/nodes/await_proposal_approval.py` | 方案确认节点，发送卡片并 interrupt |
+| `await_diagnosis_approval` | `app/graph/nodes/await_diagnosis_approval.py` | 诊断确认节点 (send_diagnosis_card + await_diagnosis_approval) |
+| `await_proposal_approval` | `app/graph/nodes/await_proposal_approval.py` | 方案确认节点 (send_proposal_card + await_proposal_approval) |
 
 **Checkpointer 策略:**
 

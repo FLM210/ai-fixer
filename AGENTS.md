@@ -6,7 +6,7 @@ This file provides guidance to AI agents (Claude Code, Codex, etc.) when working
 
 ## 项目概述
 
-ai-fixer 是一个运维领域的智能修复 Agent，以飞书群聊为交互界面，监听告警并通过 LLM 进行分类、诊断、提出修复方案。核心是一个 12 节点 LangGraph 状态机，支持两步人工确认（诊断确认 + 方案确认）。
+ai-fixer 是一个运维领域的智能修复 Agent，以飞书群聊为交互界面，监听告警并通过 LLM 进行分类、诊断、提出修复方案。核心是一个 13 节点 LangGraph 状态机，支持两步人工确认（诊断确认 + 方案确认）。
 
 ## 常用命令
 
