@@ -13,18 +13,20 @@ from app.graph.state import GraphState
 logger = logging.getLogger(__name__)
 
 
-async def send_proposal_card_node(state: GraphState) -> GraphState:
+async def send_proposal_card_node(state: GraphState, config: dict[str, Any]) -> GraphState:
     """发送方案确认卡片（独立节点，state 修改会被 checkpoint 保存）。"""
     from app.lark.card_sender import send_proposal_confirm_card
 
     chat_id = state["source_meta"].get("chat_id", "")
     incident_id = state["incident_id"]
+    thread_id = config.get("configurable", {}).get("thread_id", "")
 
     try:
         logger.info("发送方案确认卡片: incident=%s chat=%s", incident_id, chat_id)
         await send_proposal_confirm_card(
             chat_id=chat_id,
             incident_id=incident_id,
+            thread_id=thread_id,
             diagnosis=state.get("diagnosis_summary") or "无诊断结果",
             confidence=state.get("confidence") or 0,
             category=state.get("category") or "unknown",

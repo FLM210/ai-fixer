@@ -9,7 +9,7 @@ import KnowledgePage from '@/pages/KnowledgePage';
 
 function App() {
   return (
-    <BrowserRouter basename="/app">
+    <BrowserRouter basename="/">
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />

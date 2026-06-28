@@ -7,6 +7,63 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# 全局 checkpointer 单例
+_checkpointer = None
+_checkpointer_lock = None
+
+
+async def get_checkpointer() -> Any:
+    """获取全局 checkpointer 单例。"""
+    global _checkpointer, _checkpointer_lock
+
+    if _checkpointer is not None:
+        return _checkpointer
+
+    import asyncio
+    if _checkpointer_lock is None:
+        _checkpointer_lock = asyncio.Lock()
+
+    async with _checkpointer_lock:
+        # 双重检查
+        if _checkpointer is not None:
+            return _checkpointer
+
+        _checkpointer = await _create_checkpointer()
+        return _checkpointer
+
+
+async def _create_checkpointer() -> Any:
+    """创建 checkpointer: 生产用 PostgreSQL, 开发用内存。"""
+    try:
+        from app.config import get_settings
+
+        settings = get_settings()
+        database_url = settings.database_url
+
+        # 如果配置了数据库, 使用 PostgreSQL 持久化
+        if database_url and "postgresql" in database_url:
+            from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+            from psycopg.rows import dict_row
+            from psycopg_pool import AsyncConnectionPool
+
+            # psycopg requires standard postgresql:// scheme
+            pool_url = database_url.replace("+asyncpg", "").replace("+psycopg", "")
+            pool = AsyncConnectionPool(
+                pool_url, kwargs={"row_factory": dict_row}
+            )
+            checkpointer = AsyncPostgresSaver(conn=pool)
+            await checkpointer.setup()
+            logger.info("使用 PostgreSQL checkpointer (生产模式)")
+            return checkpointer
+    except Exception:
+        logger.warning("PostgreSQL checkpointer 初始化失败, 回退到内存模式", exc_info=True)
+
+    # 开发模式: 使用内存 checkpointer
+    from langgraph.checkpoint.memory import MemorySaver
+
+    logger.info("使用 MemorySaver checkpointer (开发模式)")
+    return MemorySaver()
+
 
 async def load_env_context() -> str | None:
     """从数据库加载生产环境上下文。"""
@@ -214,34 +271,3 @@ async def save_workflow_result(result: dict[str, Any]) -> None:
 
     except Exception:
         logger.exception("保存工作流结果失败")
-
-
-async def create_checkpointer() -> Any:
-    """根据环境创建 checkpointer: 生产用 PostgreSQL, 开发用内存。"""
-    try:
-        from app.config import get_settings
-
-        settings = get_settings()
-        database_url = settings.database_url
-
-        # 如果配置了数据库, 使用 PostgreSQL 持久化
-        if database_url and "postgresql" in database_url:
-            from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-            from psycopg.rows import dict_row
-            from psycopg_pool import AsyncConnectionPool
-
-            pool = AsyncConnectionPool(
-                database_url, kwargs={"row_factory": dict_row}
-            )
-            checkpointer = AsyncPostgresSaver(conn=pool)
-            await checkpointer.setup()
-            logger.info("使用 PostgreSQL checkpointer (生产模式)")
-            return checkpointer
-    except Exception:
-        logger.warning("PostgreSQL checkpointer 初始化失败, 回退到内存模式", exc_info=True)
-
-    # 开发模式: 使用内存 checkpointer
-    from langgraph.checkpoint.memory import MemorySaver
-
-    logger.info("使用 MemorySaver checkpointer (开发模式)")
-    return MemorySaver()

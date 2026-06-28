@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <!-- Vibrant Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A1B26" />
+      <stop offset="100%" stop-color="#0F0F14" />
+    </linearGradient>
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F0FF" />
+      <stop offset="100%" stop-color="#0066FF" />
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#B200FF" />
+      <stop offset="100%" stop-color="#FF007F" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00FF87" />
+      <stop offset="100%" stop-color="#60EFFF" />
+    </linearGradient>
+
+    <!-- Glowing effects -->
+    <filter id="dropGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+    <filter id="cyanGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- App Icon Background -->
+  <rect x="5" y="5" width="110" height="110" rx="25" fill="url(#bgGrad)" filter="url(#dropGlow)" />
+  <rect x="5" y="5" width="110" height="110" rx="25" fill="none" stroke="url(#purpleGrad)" stroke-width="1" opacity="0.3"/>
+
+  <!-- Outer Hexagon Ring (K8s/Ops) -->
+  <polygon points="60,20 94.6,40 94.6,80 60,100 25.4,80 25.4,40" fill="none" stroke="url(#cyanGrad)" stroke-width="3" stroke-linejoin="round" filter="url(#cyanGlow)" opacity="0.85"/>
+  <!-- Inner Hexagon Ring -->
+  <polygon points="60,28 87.7,44 87.7,76 60,92 32.3,76 32.3,44" fill="none" stroke="url(#purpleGrad)" stroke-width="1.5" stroke-linejoin="round" opacity="0.6"/>
+
+  <!-- Hexagon Nodes -->
+  <circle cx="60" cy="20" r="3.5" fill="url(#accentGrad)" filter="url(#cyanGlow)"/>
+  <circle cx="94.6" cy="40" r="3.5" fill="url(#cyanGrad)"/>
+  <circle cx="94.6" cy="80" r="3.5" fill="url(#purpleGrad)"/>
+  <circle cx="60" cy="100" r="3.5" fill="url(#cyanGrad)"/>
+  <circle cx="25.4" cy="80" r="3.5" fill="url(#purpleGrad)"/>
+  <circle cx="25.4" cy="40" r="3.5" fill="url(#cyanGrad)"/>
+
+  <!-- Crossed Tools -->
+  <!-- Wrench -->
+  <g transform="translate(60,60) rotate(45) translate(-60,-60)" filter="url(#dropGlow)">
+    <!-- Wrench handle -->
+    <rect x="56" y="38" width="8" height="45" fill="url(#cyanGrad)"/>
+    <!-- Wrench head -->
+    <path d="M46 40 A14 14 0 1 1 74 40 L66 40 A6 6 0 1 0 54 40 Z" fill="url(#cyanGrad)"/>
+    <!-- Wrench bottom ring -->
+    <circle cx="60" cy="85" r="9" fill="none" stroke="url(#cyanGrad)" stroke-width="7"/>
+  </g>
+
+  <!-- AI Circuit Wand -->
+  <g transform="translate(60,60) rotate(-45) translate(-60,-60)" filter="url(#dropGlow)">
+    <rect x="57.5" y="25" width="5" height="70" rx="2.5" fill="url(#purpleGrad)"/>
+    <circle cx="60" cy="25" r="7" fill="url(#accentGrad)" filter="url(#cyanGlow)"/>
+    <circle cx="60" cy="95" r="5" fill="url(#purpleGrad)"/>
+    <!-- Wand rings -->
+    <rect x="54" y="40" width="12" height="4" rx="1" fill="url(#cyanGrad)"/>
+    <rect x="54" y="75" width="12" height="4" rx="1" fill="url(#cyanGrad)"/>
+  </g>
+  
+  <!-- Central AI Core overlay -->
+  <g filter="url(#dropGlow)">
+    <circle cx="60" cy="60" r="14" fill="url(#bgGrad)" stroke="url(#cyanGrad)" stroke-width="3"/>
+    <circle cx="60" cy="60" r="5" fill="url(#accentGrad)" filter="url(#cyanGlow)"/>
+  </g>
+
+  <!-- Floating Tech Sparkles -->
+  <path d="M40,35 L41.5,39 L45.5,40.5 L41.5,42 L40,46 L38.5,42 L34.5,40.5 L38.5,39 Z" fill="url(#cyanGrad)"/>
+  <path d="M80,85 L81,87 L83,88 L81,89 L80,91 L79,89 L77,88 L79,87 Z" fill="url(#purpleGrad)"/>
+  <path d="M80,35 L81,38 L84,39 L81,40 L80,43 L79,40 L76,39 L79,38 Z" fill="url(#accentGrad)"/>
+</svg>

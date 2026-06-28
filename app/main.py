@@ -146,11 +146,6 @@ app.add_middleware(
 # ── 显式路由（必须在 StaticFiles mount 之前注册）──
 
 
-@app.get("/")
-async def root() -> dict[str, str]:
-    return {"service": "ai-fixer", "version": "0.1.0"}
-
-
 @app.get("/healthz")
 async def healthz() -> Response:
     settings = get_settings()
@@ -197,8 +192,24 @@ setup_metrics(app)
 import os
 
 if os.environ.get("SERVE_STATIC") == "1":
+    from pathlib import Path
+
     from fastapi.staticfiles import StaticFiles
+    from starlette.responses import FileResponse
 
     _static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
     if os.path.isdir(_static_dir):
-        app.mount("/app", StaticFiles(directory=_static_dir, html=True), name="static")
+        # 挂载静态资源目录（JS、CSS、图片等）
+        _assets_dir = os.path.join(_static_dir, "assets")
+        if os.path.isdir(_assets_dir):
+            app.mount("/assets", StaticFiles(directory=_assets_dir), name="assets")
+
+        # SPA fallback: 所有非 API、非静态文件的请求都返回 index.html
+        @app.get("/{full_path:path}")
+        async def serve_spa(full_path: str):
+            # 尝试提供静态文件
+            file_path = Path(_static_dir) / full_path
+            if file_path.is_file():
+                return FileResponse(file_path)
+            # 否则返回 index.html（SPA 路由）
+            return FileResponse(os.path.join(_static_dir, "index.html"))

@@ -11,7 +11,7 @@ services:
       - LOG_LEVEL=INFO
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.fixer.rule=Host(`fixer.dlbppx.online`)"
+      - "traefik.http.routers.fixer.rule=Host(`fixer.example.com`)"
       - "traefik.http.routers.fixer.entrypoints=websecure"
       - "traefik.http.routers.fixer.tls.certresolver=letsencrypt"
       - "traefik.http.services.fixer.loadbalancer.server.url=http://172.17.0.1:8080"

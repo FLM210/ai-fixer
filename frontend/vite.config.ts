@@ -6,7 +6,7 @@ import path from 'path'
 const apiTarget = process.env.VITE_API_PROXY || 'http://localhost:8080'
 
 export default defineConfig({
-  base: '/app/',
+  base: '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

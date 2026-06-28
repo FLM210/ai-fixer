@@ -18,8 +18,10 @@
 
 ## 快速开始
 
+> **前提条件**：需要准备好 PostgreSQL 和 Redis 服务，详见 [基础设施准备](docs/deployment/infrastructure.md)
+
 ```bash
-# 一键启动（含 PG + Redis + 后端 + 前端）
+# 一键启动应用
 make up
 
 # 或仅启动前后端（复用本机 infra-postgres / infra-redis）
@@ -37,14 +39,35 @@ make down-dev
 ```bash
 make install
 cp .env.example .env
-docker-compose up -d postgres redis
+# 编辑 .env 配置数据库和 Redis 连接
 make migrate
 make run
 ```
 
 访问：
 - 后端 API：http://localhost:8080
-- 前端管理：http://localhost:5173
+- 前端管理：http://localhost:8080
+
+## 部署
+
+详细的生产环境部署指南请参考 [完整部署文档](docs/deployment/README.md)，包含：
+
+- 🤖 飞书机器人创建与权限配置
+- 🗄️ 基础设施准备（PostgreSQL、Redis）
+- 🐳 Docker Compose / Helm Chart 部署
+- 🔧 环境变量配置与验证
+- 🔒 生产环境加固与监控
+
+**镜像地址**：`hahtangtang/ai-fixer:latest`
+
+## 文档
+
+完整的项目文档请访问 [GitHub Pages](https://flm210.github.io/ai-fixer/)，包含：
+
+- 📚 [使用指南](https://flm210.github.io/ai-fixer/guide/) - 快速开始、核心概念、飞书集成
+- 🚀 [部署文档](https://flm210.github.io/ai-fixer/deployment/) - Docker、Kubernetes 部署
+- 💻 [开发指南](https://flm210.github.io/ai-fixer/development/) - 架构设计、插件开发
+- 📖 [API 文档](https://flm210.github.io/ai-fixer/api/) - REST API、Webhook
 
 ## 常用命令
 
@@ -112,16 +135,16 @@ make dev-ui     # 前端开发服务器
 
 ### 环境变量（.env）
 
-仅需配置基础设施连接：
+配置基础设施连接（必需）：
 
 ```env
-DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/db
-REDIS_URL=redis://localhost:6379/0
+DATABASE_URL=postgresql+asyncpg://user:pass@your-postgres-host:5432/db
+REDIS_URL=redis://your-redis-host:6379/0
 ```
 
 ### 运行时配置（前端管理）
 
-通过 http://localhost:5173/config 管理：
+通过 http://localhost:8080 管理：
 
 - LLM 参数（provider, model, api_key, timeout）
 - 飞书集成（app_id, app_secret, alert_bot_ids）
@@ -131,7 +154,7 @@ REDIS_URL=redis://localhost:6379/0
 
 ### 环境上下文
 
-通过 http://localhost:5173/environment 配置生产环境信息，LLM 在诊断时会参考：
+通过 http://localhost:8080/environment 配置生产环境信息，LLM 在诊断时会参考：
 
 - 服务列表及依赖关系
 - 基础设施信息（集群、节点、数据库）

@@ -219,6 +219,8 @@ async def send_result_card(
         ],
     }
 
+    if source_message_id:
+        return await _reply_to_message(source_message_id, "interactive", card)
     return await _send_to_chat(chat_id, "interactive", card)
 
 
@@ -346,6 +348,7 @@ async def send_approval_card(
 async def send_diagnosis_confirm_card(
     chat_id: str,
     incident_id: str,
+    thread_id: str,
     diagnosis: str,
     confidence: float,
     category: str,
@@ -374,6 +377,7 @@ async def send_diagnosis_confirm_card(
 
     card_json = renderer.render_diagnosis_confirm(
         incident_id=incident_id,
+        thread_id=thread_id,
         severity=severity,
         category=category,
         service=service,
@@ -391,6 +395,7 @@ async def send_diagnosis_confirm_card(
 async def send_proposal_confirm_card(
     chat_id: str,
     incident_id: str,
+    thread_id: str,
     diagnosis: str,
     confidence: float,
     category: str,
@@ -430,6 +435,7 @@ async def send_proposal_confirm_card(
 
     card_json = renderer.render_proposal_confirm(
         incident_id=incident_id,
+        thread_id=thread_id,
         severity=severity,
         category=category,
         diagnosis=diagnosis[:500],

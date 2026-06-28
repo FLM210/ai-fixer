@@ -27,8 +27,10 @@ uv run pytest tests/path/to/test_file.py::test_name -v
 
 本地开发启动顺序：
 ```bash
-make install && cp .env.example .env && docker-compose up -d postgres redis && make migrate && make run
+make install && cp .env.example .env && make migrate && make run
 ```
+
+> **注意**：需要先准备好 PostgreSQL 和 Redis 服务，并在 `.env` 中配置连接信息。
 
 ## 架构
 

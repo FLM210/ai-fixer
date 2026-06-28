@@ -6,6 +6,8 @@ WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm install
 COPY frontend/ ./
+ARG APP_VERSION=v0.1.0
+ENV VITE_APP_VERSION=$APP_VERSION
 RUN npm run build
 
 

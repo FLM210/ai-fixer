@@ -36,9 +36,7 @@ def set_card_handler(handler: Any) -> None:
     _card_handler = handler
 
 
-def _verify_signature(
-    token: str, timestamp: str, nonce: str, signature: str, body: str
-) -> bool:
+def _verify_signature(token: str, timestamp: str, nonce: str, signature: str, body: str) -> bool:
     """验证飞书事件签名。"""
     if not token:
         return True  # 未配置 token 则跳过验证
@@ -110,12 +108,12 @@ async def lark_event(request: Request) -> dict:
 
     if signature and not encrypt_key:
         # 未启用加密策略时用签名验证（加密策略下 AES 已保证安全）
-        if not _verify_signature(
-            token, timestamp, nonce, signature, body_str
-        ):
+        if not _verify_signature(token, timestamp, nonce, signature, body_str):
             logger.warning(
                 "飞书事件签名验证失败: ts=%s nonce=%s sig=%s",
-                repr(timestamp), repr(nonce), repr(signature[:20]),
+                repr(timestamp),
+                repr(nonce),
+                repr(signature[:20]),
             )
             raise HTTPException(status_code=403, detail="Signature verification failed")
 
@@ -169,13 +167,9 @@ async def lark_card_action(request: Request) -> dict:
         timestamp = request.headers.get("X-Lark-Request-Timestamp", "")
         nonce = request.headers.get("X-Lark-Request-Nonce", "")
         body_str = json.dumps(body, ensure_ascii=False)
-        if not _verify_signature(
-            "", timestamp, nonce, signature, body_str
-        ):
+        if not _verify_signature("", timestamp, nonce, signature, body_str):
             logger.warning("卡片回调签名验证失败")
-            raise HTTPException(
-                status_code=403, detail="Signature verification failed"
-            )
+            raise HTTPException(status_code=403, detail="Signature verification failed")
 
     # 提取 action 信息
     action = body.get("action", {})
@@ -212,7 +206,8 @@ async def lark_card_action(request: Request) -> dict:
         except Exception:
             logger.debug("添加卡片表情回应失败", exc_info=True)
 
-    asyncio.create_task(_resume_workflow(incident_id, action_type, open_id))
+    thread_id = value.get("thread_id", "")
+    asyncio.create_task(_resume_workflow(incident_id, action_type, open_id, thread_id))
 
     toast_msg = {
         "approve": "✅ 已确认, 正在继续处理...",
@@ -223,61 +218,130 @@ async def lark_card_action(request: Request) -> dict:
     return {"toast": {"type": toast_type, "content": toast_msg}}
 
 
-async def _resume_workflow(incident_id: str, action: str, user_id: str) -> None:
+async def _resume_workflow(
+    incident_id: str, action: str, user_id: str, thread_id: str = ""
+) -> None:
     """恢复被 interrupt 暂停的工作流 (由卡片按钮回调触发)。"""
     from app.lark.card_sender import send_text_message
     from app.lark.workflow_manager import workflow_manager
     from app.lark.workflow_runner import save_workflow_result, send_workflow_result
 
-    # 优先用 incident_id 匹配，找不到则用 chat_id 匹配最新待确认工作流
+    # 优先用 incident_id 匹配
     run = workflow_manager.get_by_incident(incident_id)
-    if not run:
+    chat_id = ""
+    source_message_id = ""
+    interrupt_type = "unknown"
+    result = None
+
+    if run:
+        chat_id = run.chat_id
+        interrupt_type = run.interrupt_type
+        thread_id = run.thread_id
+        source_message_id = run.source_message_id
+
         logger.info(
-            "incident_id 未匹配，尝试 fallback: incident=%s", incident_id
+            "内存恢复工作流: incident=%s action=%s type=%s user=%s thread=%s",
+            incident_id,
+            action,
+            interrupt_type,
+            user_id,
+            thread_id,
         )
-        # 从所有 pending run 中找最新的
-        for r in workflow_manager._pending.values():
-            run = r
-            break
-        if not run:
-            logger.warning("未找到待恢复的工作流: incident=%s", incident_id)
+        try:
+            result = await workflow_manager.resume_by_thread(thread_id, action)
+        except Exception:
+            logger.exception("工作流恢复执行异常: incident=%s", incident_id)
+            if source_message_id:
+                try:
+                    from app.lark.card_sender import add_reaction
+
+                    await add_reaction(source_message_id, "SKULL")
+                except Exception:
+                    pass
+            await send_text_message(
+                chat_id=chat_id, text=f"❌ 修复流程异常\nincident: {incident_id}"
+            )
+            return
+    else:
+        if not thread_id:
+            logger.warning("未找到待恢复的工作流且无 thread_id: incident=%s", incident_id)
             return
 
-    chat_id = run.chat_id
-    interrupt_type = run.interrupt_type
-    thread_id = run.thread_id
-    source_message_id = run.source_message_id
-
-    logger.info(
-        "恢复工作流: incident=%s action=%s type=%s user=%s",
-        incident_id,
-        action,
-        interrupt_type,
-        user_id,
-    )
-
-    # 通过 resume 将 action 传递给 LangGraph interrupt
-    try:
-        result = await workflow_manager.resume_by_thread(thread_id, action)
-    except Exception:
-        logger.exception("工作流恢复执行异常: incident=%s", incident_id)
-        # 给原始告警消息添加失败表情
-        if source_message_id:
-            try:
-                from app.lark.card_sender import add_reaction
-
-                await add_reaction(source_message_id, "SKULL")
-            except Exception:
-                pass
-        await send_text_message(
-            chat_id=chat_id,
-            text=f"❌ 修复流程异常\nincident: {incident_id}",
+        logger.info(
+            "尝试从持久化存储恢复工作流: thread=%s incident=%s action=%s",
+            thread_id,
+            incident_id,
+            action,
         )
-        return
+        from langgraph.errors import GraphInterrupt
+        from langgraph.types import Command
+
+        from app.graph.workflow import create_workflow
+        from app.lark.workflow_runner import get_checkpointer
+
+        try:
+            checkpointer = await get_checkpointer()
+            app = create_workflow().compile(checkpointer=checkpointer)
+            config = {"configurable": {"thread_id": thread_id}}
+
+            # 读取当前状态以获取上下文信息
+            state_snapshot = await app.aget_state(config)
+            if not state_snapshot or not state_snapshot.next:
+                logger.warning("状态图中未找到待恢复的线程或不在中断状态: %s", thread_id)
+                return
+
+            state_values = state_snapshot.values
+            chat_id = state_values.get("source_meta", {}).get("chat_id", "")
+            source_message_id = state_values.get("source_meta", {}).get("msg_id", "")
+
+            if state_snapshot.tasks and state_snapshot.tasks[0].interrupts:
+                interrupt_data = state_snapshot.tasks[0].interrupts[0].value
+                if isinstance(interrupt_data, dict):
+                    interrupt_type = interrupt_data.get("type", "unknown")
+
+            result = await app.ainvoke(
+                Command(resume={"action": action, "_resumed": True}),
+                config=config,
+            )
+        except GraphInterrupt as e:
+            # 再次中断 (比如进入下一环节), 保存到 workflow_manager 加速下次恢复
+            interrupt_type = "unknown"
+            if getattr(e, "interrupts", None):
+                interrupt_data = e.interrupts[0].value
+                if isinstance(interrupt_data, dict):
+                    interrupt_type = interrupt_data.get("type", "unknown")
+
+            logger.info("工作流再次暂停: thread=%s type=%s", thread_id, interrupt_type)
+            workflow_manager.register_pending(
+                thread_id=thread_id,
+                incident_id=incident_id,
+                chat_id=chat_id,
+                interrupt_type=interrupt_type,
+                app=app,
+                config=config,
+                source_message_id=source_message_id,
+            )
+            return
+        except Exception:
+            logger.exception(
+                "工作流持久化恢复执行异常: incident=%s thread=%s", incident_id, thread_id
+            )
+            if source_message_id:
+                try:
+                    from app.lark.card_sender import add_reaction
+
+                    await add_reaction(source_message_id, "SKULL")
+                except Exception:
+                    pass
+            if chat_id:
+                await send_text_message(
+                    chat_id=chat_id, text=f"❌ 修复流程异常\nincident: {incident_id}"
+                )
+            return
 
     if result is not None:
         # 工作流已完成, 保存结果并发送
-        logger.info("工作流已完成: incident=%s", incident_id)
+        logger.info("工作流已完成: incident=%s thread=%s", incident_id, thread_id)
         await save_workflow_result(result)
         await send_workflow_result(chat_id, result)
 
@@ -292,20 +356,14 @@ async def _resume_workflow(incident_id: str, action: str, user_id: str) -> None:
                 pass
 
     elif action == "reject":
-        label = (
-            "诊断确认"
-            if interrupt_type == "diagnosis_approval"
-            else "修复方案"
-        )
+        label = "诊断确认" if interrupt_type == "diagnosis_approval" else "修复方案"
         await send_text_message(
             chat_id=chat_id,
             text=f"🚫 {label}已拒绝\nincident: {incident_id}",
         )
     else:
         # approve 后工作流再次 interrupt (例如方案确认), 卡片已发送
-        logger.info(
-            "工作流继续暂停等待下一步确认: incident=%s", incident_id
-        )
+        logger.info("工作流继续暂停等待下一步确认: incident=%s", incident_id)
 
 
 async def _handle_message_event(event: dict) -> None:
@@ -316,16 +374,12 @@ async def _handle_message_event(event: dict) -> None:
         sender = event.get("sender", {})
 
         chat_id = message.get("chat_id", "")
-        msg_type = message.get(
-            "message_type", message.get("msg_type", "")
-        )
+        msg_type = message.get("message_type", message.get("msg_type", ""))
         content = message.get("content", "")
         message_id = message.get("message_id", "")
 
         sender_id_obj = sender.get("sender_id", {})
-        sender_id = sender_id_obj.get("open_id", "") or sender_id_obj.get(
-            "user_id", ""
-        )
+        sender_id = sender_id_obj.get("open_id", "") or sender_id_obj.get("user_id", "")
 
         # 收到消息后添加表情回应（确认机器人收到了消息）
         if message_id:
@@ -352,14 +406,10 @@ async def _handle_message_event(event: dict) -> None:
         if not detector.is_alert(text, sender_id):
             return
 
-        logger.info(
-            "检测到告警, 触发工作流: chat=%s sender=%s", chat_id, sender_id
-        )
+        logger.info("检测到告警, 触发工作流: chat=%s sender=%s", chat_id, sender_id)
 
         loop = asyncio.get_running_loop()
-        loop.create_task(
-            _trigger_workflow(text, chat_id, message_id, sender_id)
-        )
+        loop.create_task(_trigger_workflow(text, chat_id, message_id, sender_id))
 
     except Exception:
         logger.exception("处理消息事件异常")
@@ -413,9 +463,7 @@ def _extract_card_text(obj: Any, parts: list[str]) -> None:
             _extract_card_text(item, parts)
 
 
-async def _trigger_workflow(
-    alert_text: str, chat_id: str, message_id: str, sender_id: str
-) -> None:
+async def _trigger_workflow(alert_text: str, chat_id: str, message_id: str, sender_id: str) -> None:
     """触发 LangGraph 工作流处理告警 (HTTP 回调模式)。"""
     from uuid import uuid4
 
@@ -443,10 +491,10 @@ async def _trigger_workflow(
     logger.info("启动工作流: incident=%s thread=%s", incident_id, thread_id)
 
     try:
-        # 直接创建 MemorySaver，避免任何缓存
-        from langgraph.checkpoint.memory import MemorySaver
+        # 使用全局 checkpointer
+        from app.lark.workflow_runner import get_checkpointer
 
-        checkpointer = MemorySaver()
+        checkpointer = await get_checkpointer()
         logger.info("checkpointer id=%s, type=%s", id(checkpointer), type(checkpointer).__name__)
 
         workflow = create_workflow()
@@ -469,7 +517,9 @@ async def _trigger_workflow(
 
             logger.info(
                 "工作流暂停等待确认: incident=%s thread=%s type=%s",
-                incident_id, thread_id, interrupt_type,
+                incident_id,
+                thread_id,
+                interrupt_type,
             )
 
             workflow_manager.register_pending(
@@ -490,12 +540,28 @@ async def _trigger_workflow(
         )
         from app.lark.workflow_runner import save_workflow_result, send_workflow_result
 
-        await save_workflow_result(result)
-        await send_workflow_result(chat_id, result)
+        # 如果是重复告警，则直接提示，不发送冗长的结果卡片
+        if result.get("is_duplicate"):
+            logger.info("检测到重复告警，跳过发送结果卡片: incident=%s", incident_id)
+            await send_text_message(
+                chat_id=chat_id,
+                text=f"🔕 收到重复告警，已自动归并到现有处理流程。\nincident: {incident_id}",
+            )
+            # 添加归并表情
+            if message_id:
+                try:
+                    from app.lark.card_sender import add_reaction
+
+                    await add_reaction(message_id, "FOLD")  # 折叠/归并表情，或者直接用 DONE
+                except Exception:
+                    pass
+        else:
+            await save_workflow_result(result)
+            await send_workflow_result(chat_id, result)
 
     except GraphInterrupt as e:
         interrupt_type = "unknown"
-        if e.interrupts:
+        if getattr(e, "interrupts", None):
             interrupt_data = e.interrupts[0].value
             if isinstance(interrupt_data, dict):
                 interrupt_type = interrupt_data.get("type", "unknown")

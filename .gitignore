@@ -19,5 +19,6 @@ custom_plugins/*.py
 custom_plugins/*.pyc
 
 
-docs/superpowersdeploy/**/.env
+docs/superpowers/
+deploy/**/.env
 deploy/test/docker-compose.override.yml

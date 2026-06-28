@@ -30,6 +30,7 @@ class CardRenderer:
     def render_diagnosis_confirm(
         self,
         incident_id: str,
+        thread_id: str,
         severity: str,
         category: str,
         service: str,
@@ -42,6 +43,7 @@ class CardRenderer:
         template = self.env.get_template("diagnosis_confirm.j2")
         return template.render(
             incident_id=incident_id,
+            thread_id=thread_id,
             severity=severity,
             severity_color=severity_colors.get(severity, "blue"),
             category=category,
@@ -55,6 +57,7 @@ class CardRenderer:
     def render_proposal_confirm(
         self,
         incident_id: str,
+        thread_id: str,
         severity: str,
         category: str,
         diagnosis: str,
@@ -67,6 +70,7 @@ class CardRenderer:
         template = self.env.get_template("proposal_confirm.j2")
         return template.render(
             incident_id=incident_id,
+            thread_id=thread_id,
             severity=severity,
             severity_color=severity_colors.get(severity, "blue"),
             category=category,

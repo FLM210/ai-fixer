@@ -176,7 +176,7 @@ async def _trigger_workflow(
     from app.lark.workflow_manager import workflow_manager
     from app.lark.workflow_runner import (
         build_initial_state,
-        create_checkpointer,
+        get_checkpointer,
         load_env_context,
         save_workflow_result,
         send_workflow_result,
@@ -196,7 +196,7 @@ async def _trigger_workflow(
         env_context=env_context,
     )
 
-    checkpointer = await create_checkpointer()
+    checkpointer = await get_checkpointer()
     workflow = create_workflow()
     app = workflow.compile(checkpointer=checkpointer)
     config = {"configurable": {"thread_id": thread_id}}

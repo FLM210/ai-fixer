@@ -134,7 +134,8 @@ async def create_app(checkpoint_url: str) -> CompiledStateGraph[GraphState, Any]
     from psycopg.rows import dict_row
     from psycopg_pool import AsyncConnectionPool
 
-    pool = AsyncConnectionPool(checkpoint_url, kwargs={"row_factory": dict_row})
+    pool_url = checkpoint_url.replace("+asyncpg", "").replace("+psycopg", "")
+    pool = AsyncConnectionPool(pool_url, kwargs={"row_factory": dict_row})
     checkpointer = AsyncPostgresSaver(conn=pool)  # type: ignore[arg-type]
     await checkpointer.setup()
     workflow = create_workflow()
